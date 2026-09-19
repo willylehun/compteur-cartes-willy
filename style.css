@@ -166,6 +166,7 @@ body.modal-open { overflow: hidden; }
   font-size: 22px;
   backdrop-filter: blur(8px);
 }
+.icon-btn svg { width: 25px; height: 25px; display: block; fill: currentColor; }
 
 .screen { display: none; }
 .screen.active { display: block; animation: rise .24s ease both; }
@@ -448,6 +449,7 @@ body.modal-open { overflow: hidden; }
 
 .score-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .player-score-card {
+  display: block;
   position: relative;
   overflow: hidden;
   min-height: 135px;

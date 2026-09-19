@@ -15,6 +15,8 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Fin immédiate au clic sur le bouton, même avant la première manche
 - Écran de classement final indépendant du composant de dialogue du navigateur mobile
 - Mise à jour réseau prioritaire des scripts et styles de la PWA
+- Vérification automatique de la version au retour dans l'application installée
+- Icône SVG identique pour le bouton des statistiques sur le web et sur téléphone
 - Bouton de reprise affiché uniquement après le rechargement d'une partie réellement inachevée
 - Classement final affiché même lorsque plusieurs joueurs terminent à égalité
 - Annulation de la dernière manche

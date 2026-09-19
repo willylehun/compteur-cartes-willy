@@ -9,9 +9,27 @@
   <meta name="apple-mobile-web-app-title" content="Counter By Willy" />
   <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
   <title>Counter By Willy</title>
-  <link rel="manifest" href="manifest.json?v=11" />
+  <script>
+    (() => {
+      const build = "12";
+      window.__COUNTER_BUILD__ = build;
+      try {
+        const previousBuild = localStorage.getItem("willy-card-build");
+        localStorage.setItem("willy-card-build", build);
+        if (previousBuild !== build && "caches" in window) {
+          caches.keys().then(keys => Promise.all(
+            keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key))
+          ));
+        }
+      } catch {}
+      window.addEventListener("pageshow", event => {
+        if (event.persisted) window.location.reload();
+      });
+    })();
+  </script>
+  <link rel="manifest" href="manifest.json?v=12" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -31,7 +49,11 @@
           <small>Parties · Scores · Classement</small>
         </span>
       </button>
-      <button id="statsBtn" class="icon-btn" type="button" aria-label="Voir les statistiques">♛</button>
+      <button id="statsBtn" class="icon-btn" type="button" aria-label="Voir les statistiques">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6.2 7.3 11 12 4l4.7 7L21 6.2 18.8 17H5.2L3 6.2Zm3.1 12.3h11.8V20H6.1v-1.5Z" />
+        </svg>
+      </button>
     </header>
 
     <section id="setupScreen" class="screen active">
@@ -138,7 +160,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span> <small>v11</small>
+      <span>♠</span> by Willy <span>♥</span> <small>v12</small>
     </footer>
   </main>
 
@@ -209,6 +231,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

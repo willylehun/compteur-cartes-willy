@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = "11";
+const APP_VERSION = window.__COUNTER_BUILD__ || "12";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -813,8 +813,31 @@ refreshKnownPlayers();
 renderPlayerInputs();
 refreshResumeCard();
 
+async function checkPublishedVersion() {
+  try {
+    const response = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
+    const published = await response.json();
+    if (String(published.version) === APP_VERSION) return;
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key)));
+    }
+    window.location.reload();
+  } catch {}
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkPublishedVersion();
+});
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
+    const reloadKey = `willy-sw-reload-${APP_VERSION}`;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (sessionStorage.getItem(reloadKey)) return;
+      sessionStorage.setItem(reloadKey, "1");
+      window.location.reload();
+    });
     navigator.serviceWorker
       .register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: "none" })
       .then(registration => registration.update())

@@ -1,10 +1,10 @@
-const CACHE_NAME = "willy-card-counter-v11";
+const CACHE_NAME = "willy-card-counter-v12";
 const ASSETS = [
-  "./",
   "./index.html",
-  "./style.css?v=11",
-  "./app.js?v=11",
-  "./manifest.json?v=11",
+  "./style.css?v=12",
+  "./app.js?v=12",
+  "./manifest.json?v=12",
+  "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -25,34 +25,15 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
-
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put("./index.html", copy));
-        return response;
-      }).catch(() => caches.match("./index.html"))
-    );
-    return;
-  }
-
-  if (["script", "style"].includes(event.request.destination)) {
-    event.respondWith(
-      fetch(event.request, { cache: "no-store" }).then(response => {
+  event.respondWith(
+    fetch(event.request, { cache: "no-store" }).then(response => {
+      if (response.ok && response.type === "basic") {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        return response;
-      }).catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      }
       return response;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => caches.match(event.request).then(cached => (
+      cached || (event.request.mode === "navigate" ? caches.match("./index.html") : undefined)
+    )))
   );
 });

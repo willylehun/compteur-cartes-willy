@@ -3,7 +3,7 @@
   "name": "Counter By Willy",
   "short_name": "Counter By Willy",
   "description": "Compteur de points pour jeux de cartes, de 2 à 4 joueurs.",
-  "start_url": "./?app=v11",
+  "start_url": "./?app=v12",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0b3325",
