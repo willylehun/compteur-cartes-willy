@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "12";
+const APP_VERSION = window.__COUNTER_BUILD__ || "13";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -36,6 +36,7 @@ const els = {
   roundInputs: document.getElementById("roundInputs"),
   roundBadge: document.getElementById("roundBadge"),
   roundTitle: document.getElementById("roundTitle"),
+  roundDealerBadge: document.getElementById("roundDealerBadge"),
   targetBadge: document.getElementById("targetBadge"),
   dealerBanner: document.getElementById("dealerBanner"),
   leaderBanner: document.getElementById("leaderBanner"),
@@ -215,9 +216,12 @@ function renderDealerBanner() {
   const dealerIndex = getCurrentDealerIndex();
   if (dealerIndex === null) {
     els.dealerBanner.innerHTML = "♠ Choisis le donneur avant de saisir les points.";
+    els.roundDealerBadge.textContent = "♠ Distribution : à choisir";
     return;
   }
-  els.dealerBanner.innerHTML = `♠ Donneur de la manche ${state.rounds.length + 1} : <strong>${escapeHtml(state.players[dealerIndex].name)}</strong>`;
+  const dealerName = state.players[dealerIndex].name;
+  els.dealerBanner.innerHTML = `♠ Donneur de la manche ${state.rounds.length + 1} : <strong>${escapeHtml(dealerName)}</strong>`;
+  els.roundDealerBadge.innerHTML = `♠ Distribution : <strong>${escapeHtml(dealerName)}</strong>`;
 }
 
 function requestDealerIfNeeded() {
@@ -447,24 +451,18 @@ function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winne
   state.winnerIndex = winnerIndex;
 
   document.querySelectorAll("dialog[open]").forEach(dialog => {
-    dialog.close();
+    try {
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+    } catch {
+      dialog.removeAttribute("open");
+    }
   });
 
   const winners = winnerIndexes.map(index => state.players[index]).filter(Boolean);
   const winnerNames = winners.map(player => player.name);
   const isTie = winners.length > 1;
-  const stats = getStats();
-  state.players.forEach((player, index) => {
-    if (!stats[player.name]) stats[player.name] = { games: 0, wins: 0 };
-    stats[player.name].games = Number(stats[player.name].games || 0) + 1;
-    if (winnerIndexes.includes(index)) stats[player.name].wins = Number(stats[player.name].wins || 0) + 1;
-  });
-  saveStats(stats);
-
   const winner = state.players[winnerIndex];
-  saveRecentGame(isTie ? { name: winnerNames.join(" & "), total: winner.total } : winner);
-  saveActiveGame();
-  renderGame();
 
   document.getElementById("winnerTitle").textContent = isTie
     ? `${winnerNames.join(" et ")} terminent à égalité !`
@@ -477,17 +475,39 @@ function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winne
   renderWinnerPodium();
   openWinnerOverlay();
   launchConfetti();
+
+  try {
+    const stats = getStats();
+    state.players.forEach((player, index) => {
+      if (!stats[player.name]) stats[player.name] = { games: 0, wins: 0 };
+      stats[player.name].games = Number(stats[player.name].games || 0) + 1;
+      if (winnerIndexes.includes(index)) stats[player.name].wins = Number(stats[player.name].wins || 0) + 1;
+    });
+    saveStats(stats);
+    saveRecentGame(isTie ? { name: winnerNames.join(" & "), total: winner.total } : winner);
+    saveActiveGame();
+  } catch (error) {
+    console.error("La sauvegarde de fin de partie a échoué.", error);
+  }
+
+  try {
+    renderGame();
+  } catch (error) {
+    console.error("Le rafraîchissement de la partie terminée a échoué.", error);
+  }
 }
 
 function openWinnerOverlay() {
   els.winnerDialog.classList.remove("hidden");
+  els.winnerDialog.hidden = false;
   els.winnerDialog.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
-  document.getElementById("newGameBtn").focus();
+  window.requestAnimationFrame(() => document.getElementById("newGameBtn")?.focus());
 }
 
 function closeWinnerOverlay() {
   els.winnerDialog.classList.add("hidden");
+  els.winnerDialog.hidden = true;
   els.winnerDialog.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
 }
@@ -754,6 +774,30 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
 }
 
+function bindReliableTap(button, action) {
+  let lastTouchAt = 0;
+
+  const runTouchAction = event => {
+    if (button.disabled) return;
+    lastTouchAt = Date.now();
+    event.preventDefault();
+    action();
+  };
+
+  if (window.PointerEvent) {
+    button.addEventListener("pointerup", event => {
+      if (event.pointerType === "touch") runTouchAction(event);
+    }, { passive: false });
+  } else {
+    button.addEventListener("touchend", runTouchAction, { passive: false });
+  }
+
+  button.addEventListener("click", () => {
+    if (Date.now() - lastTouchAt < 700 || button.disabled) return;
+    action();
+  });
+}
+
 document.getElementById("playerCountSelector").addEventListener("click", event => {
   const button = event.target.closest("[data-count]");
   if (!button) return;
@@ -781,11 +825,11 @@ els.dealerOptions.addEventListener("click", event => {
 });
 els.dealerDialog.addEventListener("cancel", event => event.preventDefault());
 
-document.getElementById("finishGameBtn").addEventListener("click", () => {
+bindReliableTap(document.getElementById("finishGameBtn"), () => {
   if (state.gameFinished) return;
   finishManualGame();
 });
-document.getElementById("confirmFinishBtn").addEventListener("click", () => {
+bindReliableTap(document.getElementById("confirmFinishBtn"), () => {
   els.confirmDialog.close();
   finishManualGame();
 });

@@ -402,6 +402,7 @@ body.modal-open { overflow: hidden; }
   color: #ffd6da;
   background: rgba(126,27,39,.12);
   touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 .danger-outline-btn {
   margin-top: 17px;
@@ -486,6 +487,19 @@ body.modal-open { overflow: hidden; }
 
 .round-panel { margin-top: 13px; }
 .round-panel-head { align-items: center; margin-bottom: 7px; }
+.round-panel-tools { display: grid; justify-items: end; gap: 7px; }
+.round-dealer-badge {
+  max-width: 250px;
+  padding: 7px 10px;
+  border: 1px solid #d8c489;
+  border-radius: 999px;
+  color: #173324;
+  background: #f8e9bd;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+}
+.round-dealer-badge strong { color: #7e1b27; }
 .round-panel .eyebrow { margin-bottom: 3px; }
 .round-panel h2 { font-size: 24px; }
 .round-help { margin: 0 0 13px; color: var(--muted); font-size: 11px; line-height: 1.4; }
@@ -763,5 +777,8 @@ body.modal-open { overflow: hidden; }
   .segmented { gap: 6px; }
   .segment { font-size: 12px; }
   .round-input-row { grid-template-columns: minmax(88px, 1fr) minmax(108px, 132px); }
+  .round-panel-head { align-items: flex-start; }
+  .round-panel-tools { max-width: 58%; }
+  .round-dealer-badge { line-height: 1.25; }
   .dealer-options { grid-template-columns: 1fr; }
 }

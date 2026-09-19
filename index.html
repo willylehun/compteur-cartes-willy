@@ -11,7 +11,7 @@
   <title>Counter By Willy</title>
   <script>
     (() => {
-      const build = "12";
+      const build = "13";
       window.__COUNTER_BUILD__ = build;
       try {
         const previousBuild = localStorage.getItem("willy-card-build");
@@ -27,9 +27,9 @@
       });
     })();
   </script>
-  <link rel="manifest" href="manifest.json?v=12" />
+  <link rel="manifest" href="manifest.json?v=13" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -143,7 +143,10 @@
             <p class="eyebrow">NOUVELLE MANCHE</p>
             <h2 id="roundTitle">Manche 1</h2>
           </div>
-          <button id="historyBtn" class="small-outline-btn" type="button">Historique</button>
+          <div class="round-panel-tools">
+            <div id="roundDealerBadge" class="round-dealer-badge" aria-live="polite">♠ Distribution : à choisir</div>
+            <button id="historyBtn" class="small-outline-btn" type="button">Historique</button>
+          </div>
         </div>
         <p class="round-help">Le total actuel se met à jour pendant la saisie. Après validation, tous les champs reviennent à 0 et une case vide compte pour +0.</p>
         <div id="roundInputs" class="round-inputs"></div>
@@ -160,7 +163,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span> <small>v12</small>
+      <span>♠</span> by Willy <span>♥</span> <small>v13</small>
     </footer>
   </main>
 
@@ -231,6 +234,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
