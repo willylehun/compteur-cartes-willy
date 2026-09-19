@@ -320,7 +320,8 @@ function renderRoundInputs() {
     row.innerHTML = `
       <div class="round-player-name">
         <span class="${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
-        <span>${escapeHtml(player.name)}</span>
+        <span class="round-player-label">${escapeHtml(player.name)}</span>
+        <span class="player-total-badge">${formatNumber(player.total)} pts</span>
       </div>
       <input
         class="round-score-input"
@@ -329,6 +330,7 @@ function renderRoundInputs() {
         step="1"
         autocomplete="off"
         placeholder="0"
+        value="0"
         aria-label="Points de ${escapeHtml(player.name)} pour cette manche"
         data-round-index="${index}"
       />
@@ -366,11 +368,7 @@ function validateRound() {
   }
 
   const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
-  if (inputs.some(input => input.value.trim() === "")) {
-    showToast("Entre les points de chaque joueur.");
-    return;
-  }
-  const scores = inputs.map(input => Number(input.value));
+  const scores = inputs.map(input => Number(input.value.trim() === "" ? 0 : input.value));
 
   if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
     showToast("Utilise uniquement des nombres entiers.");
@@ -379,11 +377,13 @@ function validateRound() {
 
   scores.forEach((score, index) => { state.players[index].total += score; });
   state.rounds.push({ scores, dealerIndex, at: Date.now() });
+
+  const targetResult = state.target > 0 ? checkTargetWinner() : "none";
+  if (targetResult === "won") return;
+
   saveActiveGame();
   renderGame();
-
-  if (state.target > 0) checkTargetWinner();
-  else showToast(`Manche ${state.rounds.length} enregistrée.`);
+  if (targetResult !== "tie") showToast(`Manche ${state.rounds.length} enregistrée.`);
 }
 
 function checkTargetWinner() {
@@ -393,16 +393,16 @@ function checkTargetWinner() {
     .sort((a, b) => b.total - a.total);
 
   if (!qualified.length) {
-    showToast(`Manche ${state.rounds.length} enregistrée.`);
-    return;
+    return "none";
   }
 
   if (qualified.length > 1 && qualified[0].total === qualified[1].total) {
     showToast("Égalité au-dessus de l'objectif : jouez une manche de départage.");
-    return;
+    return "tie";
   }
 
   finishWithWinner(qualified[0].index, true);
+  return "won";
 }
 
 function undoLastRound() {
@@ -426,6 +426,9 @@ function finishWithWinner(winnerIndex, automatic = false) {
   state.gameFinished = true;
   state.winnerIndex = winnerIndex;
 
+  if (els.dealerDialog.open) els.dealerDialog.close();
+  if (els.confirmDialog.open) els.confirmDialog.close();
+
   const stats = getStats();
   state.players.forEach((player, index) => {
     if (!stats[player.name]) stats[player.name] = { games: 0, wins: 0 };
@@ -439,12 +442,36 @@ function finishWithWinner(winnerIndex, automatic = false) {
   saveActiveGame();
   renderGame();
 
-  document.getElementById("winnerTitle").textContent = `${winner.name} remporte la partie !`;
+  document.getElementById("winnerTitle").textContent = `${winner.name} gagne !`;
   document.getElementById("winnerText").textContent = automatic
     ? `${winner.name} franchit l'objectif de ${formatNumber(state.target)} avec ${formatNumber(winner.total)} points.`
     : `${winner.name} termine en tête avec ${formatNumber(winner.total)} points.`;
   renderWinnerPodium();
   els.winnerDialog.showModal();
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const layer = document.getElementById("confettiLayer");
+  layer.replaceChildren();
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const colors = ["#d7ad55", "#f2d88f", "#af3140", "#1a6748", "#fff9eb"];
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < 72; index++) {
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[index % colors.length];
+    piece.style.setProperty("--delay", `${Math.random() * 0.75}s`);
+    piece.style.setProperty("--duration", `${2.5 + Math.random() * 1.7}s`);
+    piece.style.setProperty("--drift", `${-90 + Math.random() * 180}px`);
+    piece.style.setProperty("--spin", `${360 + Math.random() * 720}deg`);
+    piece.style.setProperty("--size", `${6 + Math.random() * 7}px`);
+    fragment.appendChild(piece);
+  }
+  layer.appendChild(fragment);
+  window.setTimeout(() => layer.replaceChildren(), 5000);
 }
 
 function finishManualGame() {
@@ -525,6 +552,7 @@ function resumeGame() {
 
   syncSetupControls();
   showScreen("game");
+  if (!state.gameFinished && state.target > 0 && checkTargetWinner() === "won") return;
   renderGame();
 }
 
@@ -746,5 +774,5 @@ renderPlayerInputs();
 refreshResumeCard();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=7").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=8").catch(() => {}));
 }

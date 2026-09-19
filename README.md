@@ -5,11 +5,12 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 ## Fonctionnalités
 - 2, 3 ou 4 joueurs
 - Objectif 500, 1000 ou sans limite
-- Saisie libre des points de chaque joueur, manche par manche
+- Saisie libre des points de chaque joueur, remise automatiquement à 0 après chaque manche
+- Total visible à côté du nom de chaque joueur pendant la saisie
 - Addition automatique des points au total de chaque joueur
 - Rotation du donneur apprise sur les premières manches puis annoncée automatiquement
 - Total automatique et indicateur du joueur en tête
-- Détection automatique du vainqueur quand l'objectif est atteint
+- Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final
 - Annulation de la dernière manche
 - Historique détaillé des manches
 - Sauvegarde automatique d'une partie en cours

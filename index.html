@@ -10,8 +10,8 @@
   <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
   <title>Counter By Willy</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -123,7 +123,7 @@
           </div>
           <button id="historyBtn" class="small-outline-btn" type="button">Historique</button>
         </div>
-        <p class="round-help">Chaque joueur saisit librement ses points. Ils seront ajoutés automatiquement à son total après validation de la manche.</p>
+        <p class="round-help">Chaque joueur saisit librement ses points. Après validation, les champs reviennent à 0 et une case laissée vide compte pour +0.</p>
         <div id="roundInputs" class="round-inputs"></div>
         <button id="validateRoundBtn" class="primary-btn big-btn" type="button">
           <span>Valider la manche</span>
@@ -173,6 +173,7 @@
   </dialog>
 
   <dialog id="winnerDialog" class="modal winner-modal">
+    <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
     <div class="modal-card winner-card">
       <div class="winner-crown" aria-hidden="true">♛</div>
       <p class="eyebrow dark">PARTIE TERMINÉE</p>
@@ -208,6 +209,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

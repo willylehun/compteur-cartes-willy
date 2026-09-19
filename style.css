@@ -502,7 +502,18 @@ button { -webkit-user-select: none; user-select: none; }
   align-items: center;
 }
 .round-player-name { display: flex; align-items: center; min-width: 0; gap: 7px; font-size: 13px; font-weight: 800; }
-.round-player-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.round-player-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-total-badge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid #d8c489;
+  border-radius: 999px;
+  color: #654c1d;
+  background: #fff6d9;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
 .score-field {
   position: relative;
 }
@@ -621,7 +632,8 @@ button { -webkit-user-select: none; user-select: none; }
 .recent-game span:last-child { color: var(--muted); }
 .empty-state { padding: 27px 8px 15px; color: var(--muted); text-align: center; font-size: 13px; }
 
-.winner-card { text-align: center; }
+.winner-modal { overflow: visible; }
+.winner-card { position: relative; z-index: 2; text-align: center; }
 .winner-crown { font-size: 54px; color: #b98428; line-height: 1; }
 .winner-card h2 { margin: 5px 0 7px; font-family: Georgia, "Times New Roman", serif; font-size: 34px; }
 .winner-card > p:not(.eyebrow) { margin: 0 auto; max-width: 430px; color: var(--muted); }
@@ -630,6 +642,32 @@ button { -webkit-user-select: none; user-select: none; }
 .podium-row:first-child { border-color: #d9bd78; background: #fff8e4; }
 .podium-place { font-weight: 900; color: #846521; }
 .podium-score { font-weight: 900; color: var(--felt); }
+
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti-piece {
+  position: absolute;
+  top: -12vh;
+  width: var(--size);
+  height: calc(var(--size) * 1.65);
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall var(--duration) var(--delay) cubic-bezier(.18,.72,.28,1) forwards;
+}
+
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translate3d(0, -5vh, 0) rotate(0deg); }
+  100% { opacity: .92; transform: translate3d(var(--drift), 118vh, 0) rotate(var(--spin)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece { animation: none; }
+}
 
 .dealer-card { text-align: center; }
 .dealer-symbol {
