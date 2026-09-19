@@ -505,12 +505,13 @@ button { -webkit-user-select: none; user-select: none; }
 .round-player-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-total-badge {
   flex: 0 0 auto;
-  padding: 4px 7px;
+  padding: 5px 8px;
   border: 1px solid #d8c489;
   border-radius: 999px;
-  color: #654c1d;
-  background: #fff6d9;
-  font-size: 10px;
+  color: #fff9eb;
+  background: var(--felt-2);
+  box-shadow: 0 2px 7px rgba(11,51,37,.15);
+  font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
 }

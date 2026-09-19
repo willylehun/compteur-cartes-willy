@@ -258,7 +258,7 @@ function renderGame() {
   els.roundBadge.textContent = `Manche ${roundNumber}`;
   els.roundTitle.textContent = `Manche ${roundNumber}`;
   els.targetBadge.textContent = state.target > 0 ? `Objectif ${state.target}` : "Sans limite";
-  document.getElementById("finishGameBtn").classList.toggle("hidden", state.target > 0);
+  document.getElementById("finishGameBtn").classList.remove("hidden");
   els.scoreBoard.dataset.count = String(state.playerCount);
   els.scoreBoard.innerHTML = "";
 
@@ -321,7 +321,7 @@ function renderRoundInputs() {
       <div class="round-player-name">
         <span class="${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
         <span class="round-player-label">${escapeHtml(player.name)}</span>
-        <span class="player-total-badge">${formatNumber(player.total)} pts</span>
+        <span class="player-total-badge">Total actuel : ${formatNumber(player.total)} pts</span>
       </div>
       <input
         class="round-score-input"
@@ -331,6 +331,7 @@ function renderRoundInputs() {
         autocomplete="off"
         placeholder="0"
         value="0"
+        name="round-${state.rounds.length + 1}-player-${index}"
         aria-label="Points de ${escapeHtml(player.name)} pour cette manche"
         data-round-index="${index}"
       />
@@ -344,6 +345,8 @@ function renderRoundInputs() {
 
   const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
   inputs.forEach((input, index) => {
+    input.value = "0";
+    input.defaultValue = "0";
     input.addEventListener("focus", () => input.select());
     input.addEventListener("keydown", event => {
       if (event.key !== "Enter") return;
@@ -375,15 +378,19 @@ function validateRound() {
     return;
   }
 
+  inputs.forEach(input => {
+    input.value = "0";
+    input.defaultValue = "0";
+  });
+
   scores.forEach((score, index) => { state.players[index].total += score; });
   state.rounds.push({ scores, dealerIndex, at: Date.now() });
 
-  const targetResult = state.target > 0 ? checkTargetWinner() : "none";
-  if (targetResult === "won") return;
+  if (state.target > 0 && checkTargetWinner()) return;
 
   saveActiveGame();
   renderGame();
-  if (targetResult !== "tie") showToast(`Manche ${state.rounds.length} enregistrée.`);
+  showToast(`Manche ${state.rounds.length} enregistrée.`);
 }
 
 function checkTargetWinner() {
@@ -393,16 +400,15 @@ function checkTargetWinner() {
     .sort((a, b) => b.total - a.total);
 
   if (!qualified.length) {
-    return "none";
+    return false;
   }
 
-  if (qualified.length > 1 && qualified[0].total === qualified[1].total) {
-    showToast("Égalité au-dessus de l'objectif : jouez une manche de départage.");
-    return "tie";
-  }
-
-  finishWithWinner(qualified[0].index, true);
-  return "won";
+  const highestTotal = qualified[0].total;
+  const winnerIndexes = qualified
+    .filter(player => player.total === highestTotal)
+    .map(player => player.index);
+  finishWithWinner(winnerIndexes[0], true, winnerIndexes);
+  return true;
 }
 
 function undoLastRound() {
@@ -421,40 +427,51 @@ function undoLastRound() {
   showToast("Dernière manche annulée.");
 }
 
-function finishWithWinner(winnerIndex, automatic = false) {
+function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winnerIndex]) {
   if (state.gameFinished) return;
   state.gameFinished = true;
   state.winnerIndex = winnerIndex;
 
-  if (els.dealerDialog.open) els.dealerDialog.close();
-  if (els.confirmDialog.open) els.confirmDialog.close();
+  document.querySelectorAll("dialog[open]").forEach(dialog => {
+    if (dialog !== els.winnerDialog) dialog.close();
+  });
 
+  const winners = winnerIndexes.map(index => state.players[index]).filter(Boolean);
+  const winnerNames = winners.map(player => player.name);
+  const isTie = winners.length > 1;
   const stats = getStats();
   state.players.forEach((player, index) => {
     if (!stats[player.name]) stats[player.name] = { games: 0, wins: 0 };
     stats[player.name].games = Number(stats[player.name].games || 0) + 1;
-    if (index === winnerIndex) stats[player.name].wins = Number(stats[player.name].wins || 0) + 1;
+    if (winnerIndexes.includes(index)) stats[player.name].wins = Number(stats[player.name].wins || 0) + 1;
   });
   saveStats(stats);
 
   const winner = state.players[winnerIndex];
-  saveRecentGame(winner);
+  saveRecentGame(isTie ? { name: winnerNames.join(" & "), total: winner.total } : winner);
   saveActiveGame();
   renderGame();
 
-  document.getElementById("winnerTitle").textContent = `${winner.name} gagne !`;
-  document.getElementById("winnerText").textContent = automatic
-    ? `${winner.name} franchit l'objectif de ${formatNumber(state.target)} avec ${formatNumber(winner.total)} points.`
-    : `${winner.name} termine en tête avec ${formatNumber(winner.total)} points.`;
+  document.getElementById("winnerTitle").textContent = isTie
+    ? `${winnerNames.join(" et ")} terminent à égalité !`
+    : `${winner.name} gagne !`;
+  document.getElementById("winnerText").textContent = isTie
+    ? `Ils terminent avec ${formatNumber(winner.total)} points. Voici le classement final.`
+    : automatic
+      ? `${winner.name} atteint l'objectif de ${formatNumber(state.target)} avec ${formatNumber(winner.total)} points.`
+      : `${winner.name} termine en tête avec ${formatNumber(winner.total)} points.`;
   renderWinnerPodium();
-  els.winnerDialog.showModal();
+  if (!els.winnerDialog.open) {
+    if (typeof els.winnerDialog.showModal === "function") els.winnerDialog.showModal();
+    else els.winnerDialog.setAttribute("open", "");
+  }
   launchConfetti();
 }
 
 function launchConfetti() {
   const layer = document.getElementById("confettiLayer");
   layer.replaceChildren();
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
   const colors = ["#d7ad55", "#f2d88f", "#af3140", "#1a6748", "#fff9eb"];
   const fragment = document.createDocumentFragment();
@@ -485,11 +502,11 @@ function finishManualGame() {
     .map((player, index) => ({ ...player, index }))
     .sort((a, b) => b.total - a.total);
 
-  if (ranked.length > 1 && ranked[0].total === ranked[1].total) {
-    showToast("Égalité en tête : jouez une manche de départage.");
-    return;
-  }
-  finishWithWinner(ranked[0].index, false);
+  const highestTotal = ranked[0].total;
+  const winnerIndexes = ranked
+    .filter(player => player.total === highestTotal)
+    .map(player => player.index);
+  finishWithWinner(winnerIndexes[0], false, winnerIndexes);
 }
 
 function renderWinnerPodium() {
@@ -500,7 +517,7 @@ function renderWinnerPodium() {
     <div class="podium-row">
       <span class="podium-place">${place + 1}</span>
       <span>${escapeHtml(player.name)}</span>
-      <span class="podium-score">${formatNumber(player.total)}</span>
+      <span class="podium-score">${formatNumber(player.total)} pts</span>
     </div>
   `).join("");
 }
@@ -552,7 +569,7 @@ function resumeGame() {
 
   syncSetupControls();
   showScreen("game");
-  if (!state.gameFinished && state.target > 0 && checkTargetWinner() === "won") return;
+  if (!state.gameFinished && state.target > 0 && checkTargetWinner()) return;
   renderGame();
 }
 
@@ -774,5 +791,5 @@ renderPlayerInputs();
 refreshResumeCard();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=8").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=9").catch(() => {}));
 }
