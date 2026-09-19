@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Counter By Willy",
+  "short_name": "Counter By Willy",
+  "description": "Compteur de points pour jeux de cartes, de 2 à 4 joueurs.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b3325",
+  "theme_color": "#103b2b",
+  "lang": "fr",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

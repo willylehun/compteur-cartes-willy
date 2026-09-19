@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#103b2b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Counter By Willy" />
+  <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
+  <title>Counter By Willy</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="felt-bg" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <button id="brandHomeBtn" class="brand" type="button" aria-label="Retour à l'accueil">
+        <span class="brand-card" aria-hidden="true"><span>♠</span><small>W</small></span>
+        <span class="brand-copy">
+          <strong>Counter By Willy</strong>
+          <small>Parties · Scores · Classement</small>
+        </span>
+      </button>
+      <button id="statsBtn" class="icon-btn" type="button" aria-label="Voir les statistiques">♛</button>
+    </header>
+
+    <section id="setupScreen" class="screen active">
+      <div class="hero-card">
+        <div class="mini-deck" aria-hidden="true">
+          <span class="mini-card c1">♠</span>
+          <span class="mini-card c2 red">♥</span>
+          <span class="mini-card c3 red">♦</span>
+          <span class="mini-card c4">♣</span>
+        </div>
+        <p class="eyebrow">TABLE DE JEU</p>
+        <h1>Qui va gagner<br />la prochaine partie ?</h1>
+        <p>Configure la table, saisis les points de chaque manche et laisse l'application tenir les comptes.</p>
+      </div>
+
+      <button id="resumeGameBtn" class="resume-card hidden" type="button">
+        <span class="resume-icon">↻</span>
+        <span>
+          <strong>Reprendre la partie</strong>
+          <small id="resumeGameText">Une partie est en cours</small>
+        </span>
+        <span class="resume-arrow">→</span>
+      </button>
+
+      <div class="panel setup-panel">
+        <div class="panel-title-row">
+          <div>
+            <span class="step-pill">1</span>
+            <h2>Nombre de joueurs</h2>
+          </div>
+        </div>
+        <div class="segmented" id="playerCountSelector">
+          <button class="segment active" data-count="2" type="button">2 joueurs</button>
+          <button class="segment" data-count="3" type="button">3 joueurs</button>
+          <button class="segment" data-count="4" type="button">4 joueurs</button>
+        </div>
+      </div>
+
+      <div class="panel setup-panel">
+        <div class="panel-title-row">
+          <div>
+            <span class="step-pill">2</span>
+            <h2>Points pour gagner</h2>
+          </div>
+        </div>
+        <div class="segmented target-segmented" id="targetSelector">
+          <button class="segment active" data-target="500" type="button"><strong>500</strong><small>points</small></button>
+          <button class="segment" data-target="1000" type="button"><strong>1000</strong><small>points</small></button>
+          <button class="segment" data-target="0" type="button"><strong>∞</strong><small>sans limite</small></button>
+        </div>
+      </div>
+
+      <div class="panel setup-panel">
+        <div class="panel-title-row">
+          <div>
+            <span class="step-pill">3</span>
+            <h2>Les joueurs</h2>
+          </div>
+          <small class="panel-hint">Les anciens noms sont proposés automatiquement</small>
+        </div>
+        <div id="playerInputs" class="player-inputs"></div>
+        <datalist id="knownPlayers"></datalist>
+      </div>
+
+      <button id="startGameBtn" class="primary-btn big-btn" type="button">
+        <span>Distribuer les cartes</span>
+        <span aria-hidden="true">♠</span>
+      </button>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="game-toolbar">
+        <button id="backHomeBtn" class="ghost-btn" type="button">← Accueil</button>
+        <div class="toolbar-badges">
+          <span id="roundBadge" class="round-badge">Manche 1</span>
+          <span id="targetBadge" class="target-badge">Objectif 500</span>
+        </div>
+      </div>
+
+      <div id="leaderBanner" class="leader-banner"></div>
+      <div id="scoreBoard" class="score-board"></div>
+
+      <section class="round-panel">
+        <div class="round-panel-head">
+          <div>
+            <p class="eyebrow">NOUVELLE MANCHE</p>
+            <h2 id="roundTitle">Manche 1</h2>
+          </div>
+          <button id="historyBtn" class="small-outline-btn" type="button">Historique</button>
+        </div>
+        <p class="round-help">Entre les points gagnés par chaque joueur. Les nombres négatifs sont acceptés.</p>
+        <div id="roundInputs" class="round-inputs"></div>
+        <button id="validateRoundBtn" class="primary-btn big-btn" type="button">
+          <span>Valider la manche</span>
+          <span aria-hidden="true">✓</span>
+        </button>
+      </section>
+
+      <div class="game-actions">
+        <button id="undoBtn" class="secondary-btn" type="button">↶ Annuler la dernière manche</button>
+        <button id="finishGameBtn" class="danger-outline-on-dark" type="button">Terminer la partie</button>
+      </div>
+    </section>
+
+    <footer class="signature">
+      <span>♠</span> by Willy <span>♥</span>
+    </footer>
+  </main>
+
+  <dialog id="statsDialog" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow dark">PALMARÈS</p>
+          <h2>Statistiques</h2>
+          <p>Enregistrées uniquement sur cet appareil</p>
+        </div>
+        <button class="modal-close" data-close="statsDialog" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div id="statsSummary" class="stats-summary"></div>
+      <div id="statsContent"></div>
+      <div id="recentGames"></div>
+      <button id="resetStatsBtn" class="danger-outline-btn" type="button">Réinitialiser les statistiques</button>
+    </div>
+  </dialog>
+
+  <dialog id="historyDialog" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow dark">FEUILLE DE SCORE</p>
+          <h2>Historique des manches</h2>
+        </div>
+        <button class="modal-close" data-close="historyDialog" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div id="historyContent"></div>
+    </div>
+  </dialog>
+
+  <dialog id="winnerDialog" class="modal winner-modal">
+    <div class="modal-card winner-card">
+      <div class="winner-crown" aria-hidden="true">♛</div>
+      <p class="eyebrow dark">PARTIE TERMINÉE</p>
+      <h2 id="winnerTitle">Victoire !</h2>
+      <p id="winnerText"></p>
+      <div id="winnerPodium" class="winner-podium"></div>
+      <div class="modal-actions">
+        <button id="newGameBtn" class="primary-btn" type="button">Nouvelle partie</button>
+        <button id="keepPlayingBtn" class="secondary-light-btn" type="button">Voir la feuille de score</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="confirmDialog" class="modal">
+    <div class="modal-card">
+      <p class="eyebrow dark">CONFIRMATION</p>
+      <h2>Terminer la partie ?</h2>
+      <p>Le joueur ayant le plus de points sera enregistré comme vainqueur.</p>
+      <div class="modal-actions two-cols">
+        <button id="cancelFinishBtn" class="secondary-light-btn" type="button">Annuler</button>
+        <button id="confirmFinishBtn" class="primary-btn" type="button">Terminer</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
