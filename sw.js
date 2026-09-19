@@ -1,9 +1,9 @@
-const CACHE_NAME = "willy-card-counter-v6";
+const CACHE_NAME = "willy-card-counter-v7";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=6",
-  "./app.js?v=6",
+  "./style.css?v=7",
+  "./app.js?v=7",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -19,8 +19,6 @@ self.addEventListener("activate", event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: "window" }))
-      .then(clients => Promise.all(clients.map(client => client.navigate(client.url))))
   );
 });
 
