@@ -27,6 +27,7 @@ body {
 }
 button, input { font: inherit; }
 button { -webkit-user-select: none; user-select: none; }
+body.modal-open { overflow: hidden; }
 
 .felt-bg {
   position: fixed;
@@ -399,6 +400,7 @@ button { -webkit-user-select: none; user-select: none; }
   border: 1px solid rgba(255,166,174,.34);
   color: #ffd6da;
   background: rgba(126,27,39,.12);
+  touch-action: manipulation;
 }
 .danger-outline-btn {
   margin-top: 17px;
@@ -569,6 +571,7 @@ button { -webkit-user-select: none; user-select: none; }
 }
 .signature span:first-child { color: var(--cream); }
 .signature span:last-child { color: #f0909a; }
+.signature small { margin-left: 4px; font-family: inherit; font-size: 10px; font-style: normal; opacity: .62; }
 
 .hidden { display: none !important; }
 
@@ -633,7 +636,22 @@ button { -webkit-user-select: none; user-select: none; }
 .recent-game span:last-child { color: var(--muted); }
 .empty-state { padding: 27px 8px 15px; color: var(--muted); text-align: center; font-size: 13px; }
 
-.winner-modal { overflow: visible; }
+.winner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  overflow: auto;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) 15px max(18px, env(safe-area-inset-bottom));
+  background: rgba(2,17,11,.82);
+  backdrop-filter: blur(5px);
+}
+.winner-overlay .winner-card {
+  width: min(100%, 610px);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
 .winner-card { position: relative; z-index: 2; text-align: center; }
 .winner-crown { font-size: 54px; color: #b98428; line-height: 1; }
 .winner-card h2 { margin: 5px 0 7px; font-family: Georgia, "Times New Roman", serif; font-size: 34px; }

@@ -5,6 +5,8 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
+const APP_VERSION = "11";
+
 const SUITS = [
   { symbol: "♠", red: false },
   { symbol: "♥", red: true },
@@ -445,7 +447,7 @@ function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winne
   state.winnerIndex = winnerIndex;
 
   document.querySelectorAll("dialog[open]").forEach(dialog => {
-    if (dialog !== els.winnerDialog) dialog.close();
+    dialog.close();
   });
 
   const winners = winnerIndexes.map(index => state.players[index]).filter(Boolean);
@@ -473,11 +475,21 @@ function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winne
       ? `${winner.name} atteint l'objectif de ${formatNumber(state.target)} avec ${formatNumber(winner.total)} points.`
       : `${winner.name} termine en tête avec ${formatNumber(winner.total)} points.`;
   renderWinnerPodium();
-  if (!els.winnerDialog.open) {
-    if (typeof els.winnerDialog.showModal === "function") els.winnerDialog.showModal();
-    else els.winnerDialog.setAttribute("open", "");
-  }
+  openWinnerOverlay();
   launchConfetti();
+}
+
+function openWinnerOverlay() {
+  els.winnerDialog.classList.remove("hidden");
+  els.winnerDialog.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  document.getElementById("newGameBtn").focus();
+}
+
+function closeWinnerOverlay() {
+  els.winnerDialog.classList.add("hidden");
+  els.winnerDialog.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 }
 
 function launchConfetti() {
@@ -594,7 +606,7 @@ function syncSetupControls() {
 }
 
 function newGameFromWinner() {
-  els.winnerDialog.close();
+  closeWinnerOverlay();
   clearActiveGame();
   state.players = [];
   state.rounds = [];
@@ -792,7 +804,7 @@ document.querySelectorAll("[data-close]").forEach(button => {
 document.getElementById("resetStatsBtn").addEventListener("click", resetStats);
 document.getElementById("newGameBtn").addEventListener("click", newGameFromWinner);
 document.getElementById("keepPlayingBtn").addEventListener("click", () => {
-  els.winnerDialog.close();
+  closeWinnerOverlay();
   renderHistory();
   els.historyDialog.showModal();
 });
@@ -802,5 +814,10 @@ renderPlayerInputs();
 refreshResumeCard();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=10").catch(() => {}));
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: "none" })
+      .then(registration => registration.update())
+      .catch(() => {});
+  });
 }

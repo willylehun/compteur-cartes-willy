@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-title" content="Counter By Willy" />
   <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
   <title>Counter By Willy</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json?v=11" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -138,7 +138,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span>
+      <span>♠</span> by Willy <span>♥</span> <small>v11</small>
     </footer>
   </main>
 
@@ -172,7 +172,7 @@
     </div>
   </dialog>
 
-  <dialog id="winnerDialog" class="modal winner-modal">
+  <section id="winnerDialog" class="winner-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="winnerTitle">
     <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
     <div class="modal-card winner-card">
       <div class="winner-crown" aria-hidden="true">♛</div>
@@ -185,7 +185,7 @@
         <button id="keepPlayingBtn" class="secondary-light-btn" type="button">Voir la feuille de score</button>
       </div>
     </div>
-  </dialog>
+  </section>
 
   <dialog id="dealerDialog" class="modal dealer-modal">
     <div class="modal-card dealer-card">
@@ -209,6 +209,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>

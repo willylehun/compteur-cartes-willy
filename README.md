@@ -13,6 +13,8 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final
 - Bouton de fin de partie toujours disponible, y compris avec un objectif de points
 - Fin immédiate au clic sur le bouton, même avant la première manche
+- Écran de classement final indépendant du composant de dialogue du navigateur mobile
+- Mise à jour réseau prioritaire des scripts et styles de la PWA
 - Bouton de reprise affiché uniquement après le rechargement d'une partie réellement inachevée
 - Classement final affiché même lorsque plusieurs joueurs terminent à égalité
 - Annulation de la dernière manche
