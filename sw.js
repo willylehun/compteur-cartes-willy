@@ -1,9 +1,9 @@
-const CACHE_NAME = "willy-card-counter-v3";
+const CACHE_NAME = "willy-card-counter-v4";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css",
-  "./app.js",
+  "./style.css?v=4",
+  "./app.js?v=4",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
