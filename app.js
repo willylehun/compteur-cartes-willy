@@ -23,6 +23,8 @@ const state = {
   winnerIndex: null
 };
 
+let gameLaunchedThisSession = false;
+
 const els = {
   setupScreen: document.getElementById("setupScreen"),
   gameScreen: document.getElementById("gameScreen"),
@@ -136,7 +138,7 @@ function refreshKnownPlayers() {
 
 function refreshResumeCard() {
   const saved = getSavedGame();
-  if (!saved?.players?.length) {
+  if (gameLaunchedThisSession || !saved?.players?.length || saved.gameFinished) {
     els.resumeGameBtn.classList.add("hidden");
     return;
   }
@@ -321,7 +323,7 @@ function renderRoundInputs() {
       <div class="round-player-name">
         <span class="${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
         <span class="round-player-label">${escapeHtml(player.name)}</span>
-        <span class="player-total-badge">Total actuel : ${formatNumber(player.total)} pts</span>
+        <span class="player-total-badge" data-total-index="${index}">Total actuel : ${formatNumber(player.total)} pts</span>
       </div>
       <input
         class="round-score-input"
@@ -348,6 +350,7 @@ function renderRoundInputs() {
     input.value = "0";
     input.defaultValue = "0";
     input.addEventListener("focus", () => input.select());
+    input.addEventListener("input", () => updateRoundTotalPreview(index, input.value));
     input.addEventListener("keydown", event => {
       if (event.key !== "Enter") return;
       event.preventDefault();
@@ -355,6 +358,15 @@ function renderRoundInputs() {
       else validateRound();
     });
   });
+}
+
+function updateRoundTotalPreview(index, value) {
+  const player = state.players[index];
+  const badge = els.roundInputs.querySelector(`[data-total-index="${index}"]`);
+  if (!player || !badge) return;
+  const roundScore = value.trim() === "" ? 0 : Number(value);
+  const previewTotal = player.total + (Number.isFinite(roundScore) ? roundScore : 0);
+  badge.textContent = `Total actuel : ${formatNumber(previewTotal)} pts`;
 }
 
 function validateRound() {
@@ -493,10 +505,6 @@ function launchConfetti() {
 
 function finishManualGame() {
   if (!state.players.length || state.gameFinished) return;
-  if (!state.rounds.length) {
-    showToast("Joue au moins une manche avant de terminer.");
-    return;
-  }
 
   const ranked = state.players
     .map((player, index) => ({ ...player, index }))
@@ -550,6 +558,7 @@ function startGame() {
   state.dealerSetupStartRound = 0;
   state.gameFinished = false;
   state.winnerIndex = null;
+  gameLaunchedThisSession = true;
   saveActiveGame();
   showScreen("game");
   renderGame();
@@ -566,8 +575,10 @@ function resumeGame() {
   normalizeDealerState(saved.dealerOrder, saved.dealerSetupStartRound);
   state.gameFinished = Boolean(saved.gameFinished);
   state.winnerIndex = Number.isInteger(saved.winnerIndex) ? saved.winnerIndex : null;
+  gameLaunchedThisSession = true;
 
   syncSetupControls();
+  refreshResumeCard();
   showScreen("game");
   if (!state.gameFinished && state.target > 0 && checkTargetWinner()) return;
   renderGame();
@@ -760,7 +771,7 @@ els.dealerDialog.addEventListener("cancel", event => event.preventDefault());
 
 document.getElementById("finishGameBtn").addEventListener("click", () => {
   if (state.gameFinished) return;
-  els.confirmDialog.showModal();
+  finishManualGame();
 });
 document.getElementById("confirmFinishBtn").addEventListener("click", () => {
   els.confirmDialog.close();
@@ -791,5 +802,5 @@ renderPlayerInputs();
 refreshResumeCard();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=9").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=10").catch(() => {}));
 }
