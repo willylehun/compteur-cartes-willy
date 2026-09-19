@@ -17,6 +17,8 @@ const state = {
   target: 500,
   players: [],
   rounds: [],
+  dealerOrder: [],
+  dealerSetupStartRound: 0,
   gameFinished: false,
   winnerIndex: null
 };
@@ -31,12 +33,17 @@ const els = {
   roundBadge: document.getElementById("roundBadge"),
   roundTitle: document.getElementById("roundTitle"),
   targetBadge: document.getElementById("targetBadge"),
+  dealerBanner: document.getElementById("dealerBanner"),
   leaderBanner: document.getElementById("leaderBanner"),
   resumeGameBtn: document.getElementById("resumeGameBtn"),
   resumeGameText: document.getElementById("resumeGameText"),
   statsDialog: document.getElementById("statsDialog"),
   historyDialog: document.getElementById("historyDialog"),
   winnerDialog: document.getElementById("winnerDialog"),
+  dealerDialog: document.getElementById("dealerDialog"),
+  dealerQuestion: document.getElementById("dealerQuestion"),
+  dealerHint: document.getElementById("dealerHint"),
+  dealerOptions: document.getElementById("dealerOptions"),
   confirmDialog: document.getElementById("confirmDialog")
 };
 
@@ -88,6 +95,8 @@ function getSavedGame() {
     target: Number(legacy.target || 0),
     players: legacy.players,
     rounds,
+    dealerOrder: [],
+    dealerSetupStartRound: rounds.length,
     gameFinished: Boolean(legacy.gameFinished),
     winnerIndex: null,
     savedAt: legacy.savedAt || Date.now()
@@ -100,6 +109,8 @@ function saveActiveGame() {
     target: state.target,
     players: state.players,
     rounds: state.rounds,
+    dealerOrder: state.dealerOrder,
+    dealerSetupStartRound: state.dealerSetupStartRound,
     gameFinished: state.gameFinished,
     winnerIndex: state.winnerIndex,
     savedAt: Date.now()
@@ -159,11 +170,95 @@ function renderPlayerInputs() {
   }
 }
 
+function normalizeDealerState(order, setupStartRound) {
+  const uniqueOrder = (Array.isArray(order) ? order : [])
+    .map(Number)
+    .filter((index, position, values) => (
+      Number.isInteger(index)
+      && index >= 0
+      && index < state.playerCount
+      && values.indexOf(index) === position
+    ));
+
+  state.dealerOrder = uniqueOrder.slice(0, state.playerCount);
+  state.dealerSetupStartRound = Number.isInteger(Number(setupStartRound))
+    ? Math.max(0, Number(setupStartRound))
+    : state.rounds.length;
+
+  if (state.dealerOrder.length === state.playerCount - 1) {
+    const missingIndex = state.players.findIndex((_, index) => !state.dealerOrder.includes(index));
+    if (missingIndex >= 0) state.dealerOrder.push(missingIndex);
+  }
+}
+
+function getCurrentDealerIndex() {
+  if (!state.players.length || !state.dealerOrder.length) return null;
+  const offset = state.rounds.length - state.dealerSetupStartRound;
+  if (offset < 0) return null;
+  if (state.dealerOrder.length === state.playerCount) {
+    return state.dealerOrder[offset % state.playerCount];
+  }
+  return Number.isInteger(state.dealerOrder[offset]) ? state.dealerOrder[offset] : null;
+}
+
+function dealerChoiceIsNeeded() {
+  if (state.gameFinished || !state.players.length || state.dealerOrder.length === state.playerCount) return false;
+  const offset = state.rounds.length - state.dealerSetupStartRound;
+  return offset >= 0 && offset < state.playerCount - 1 && !Number.isInteger(state.dealerOrder[offset]);
+}
+
+function renderDealerBanner() {
+  const dealerIndex = getCurrentDealerIndex();
+  if (dealerIndex === null) {
+    els.dealerBanner.innerHTML = "♠ Choisis le donneur avant de saisir les points.";
+    return;
+  }
+  els.dealerBanner.innerHTML = `♠ Donneur de la manche ${state.rounds.length + 1} : <strong>${escapeHtml(state.players[dealerIndex].name)}</strong>`;
+}
+
+function requestDealerIfNeeded() {
+  if (!dealerChoiceIsNeeded() || els.dealerDialog.open) return;
+
+  const roundNumber = state.rounds.length + 1;
+  const questionsRequired = state.playerCount - 1;
+  els.dealerQuestion.textContent = `Qui distribue la manche ${roundNumber} ?`;
+  els.dealerHint.textContent = state.playerCount === 2
+    ? "Choisis le premier donneur. Ensuite, l'application alternera automatiquement entre les deux joueurs."
+    : `Choisis le donneur pour les ${questionsRequired} premières manches. L'application apprendra ainsi le sens de rotation et annoncera les suivants.`;
+  els.dealerOptions.innerHTML = state.players.map((player, index) => {
+    const suit = SUITS[index];
+    const alreadyChosen = state.dealerOrder.includes(index);
+    return `
+      <button class="dealer-option" type="button" data-dealer-index="${index}" ${alreadyChosen ? "disabled" : ""}>
+        <span class="suit ${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
+        <span>${escapeHtml(player.name)}</span>
+      </button>
+    `;
+  }).join("");
+  els.dealerDialog.showModal();
+}
+
+function selectDealer(index) {
+  if (!dealerChoiceIsNeeded() || state.dealerOrder.includes(index) || !state.players[index]) return;
+
+  state.dealerOrder.push(index);
+  if (state.dealerOrder.length === state.playerCount - 1) {
+    const missingIndex = state.players.findIndex((_, playerIndex) => !state.dealerOrder.includes(playerIndex));
+    if (missingIndex >= 0) state.dealerOrder.push(missingIndex);
+  }
+
+  els.dealerDialog.close();
+  saveActiveGame();
+  renderDealerBanner();
+  showToast(`${state.players[index].name} distribue la manche ${state.rounds.length + 1}.`);
+}
+
 function renderGame() {
   const roundNumber = state.rounds.length + 1;
   els.roundBadge.textContent = `Manche ${roundNumber}`;
   els.roundTitle.textContent = `Manche ${roundNumber}`;
   els.targetBadge.textContent = state.target > 0 ? `Objectif ${state.target}` : "Sans limite";
+  document.getElementById("finishGameBtn").classList.toggle("hidden", state.target > 0);
   els.scoreBoard.dataset.count = String(state.playerCount);
   els.scoreBoard.innerHTML = "";
 
@@ -186,9 +281,11 @@ function renderGame() {
     els.scoreBoard.appendChild(card);
   });
 
+  renderDealerBanner();
   renderLeaderBanner();
   renderRoundInputs();
   setGameReadOnly(state.gameFinished);
+  requestDealerIfNeeded();
 }
 
 function renderLeaderBanner() {
@@ -228,36 +325,29 @@ function renderRoundInputs() {
       <input
         class="round-score-input"
         type="number"
-        inputmode="numeric"
+        inputmode="decimal"
         step="1"
-        value="0"
+        autocomplete="off"
+        placeholder="0"
         aria-label="Points de ${escapeHtml(player.name)} pour cette manche"
         data-round-index="${index}"
       />
-      <div class="quick-score-wrap">
-        <button class="quick-score" type="button" data-quick-index="${index}" data-delta="-10">−10</button>
-        <button class="quick-score" type="button" data-quick-index="${index}" data-delta="10">+10</button>
-        <button class="quick-score extra-quick" type="button" data-quick-index="${index}" data-delta="20">+20</button>
-        <button class="quick-score extra-quick" type="button" data-quick-index="${index}" data-delta="50">+50</button>
+      <div class="score-field">
+        <span class="score-unit">pts</span>
       </div>
     `;
+    row.querySelector(".score-field").prepend(row.querySelector(".round-score-input"));
     els.roundInputs.appendChild(row);
   });
 
-  els.roundInputs.querySelectorAll("[data-quick-index]").forEach(button => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.quickIndex);
-      const input = els.roundInputs.querySelector(`[data-round-index="${index}"]`);
-      const current = Number(input.value || 0);
-      input.value = String(current + Number(button.dataset.delta));
-      input.focus();
-    });
-  });
-
-  els.roundInputs.querySelectorAll(".round-score-input").forEach(input => {
+  const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
+  inputs.forEach((input, index) => {
     input.addEventListener("focus", () => input.select());
     input.addEventListener("keydown", event => {
-      if (event.key === "Enter") validateRound();
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (inputs[index + 1]) inputs[index + 1].focus();
+      else validateRound();
     });
   });
 }
@@ -268,21 +358,27 @@ function validateRound() {
     return;
   }
 
+  const dealerIndex = getCurrentDealerIndex();
+  if (dealerIndex === null) {
+    showToast("Choisis d'abord qui distribue cette manche.");
+    requestDealerIfNeeded();
+    return;
+  }
+
   const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
-  const scores = inputs.map(input => Number(input.value === "" ? 0 : input.value));
+  if (inputs.some(input => input.value.trim() === "")) {
+    showToast("Entre les points de chaque joueur.");
+    return;
+  }
+  const scores = inputs.map(input => Number(input.value));
 
   if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
     showToast("Utilise uniquement des nombres entiers.");
     return;
   }
 
-  if (scores.every(score => score === 0)) {
-    showToast("Tous les scores sont à 0. Entre les points de la manche.");
-    return;
-  }
-
   scores.forEach((score, index) => { state.players[index].total += score; });
-  state.rounds.push({ scores, at: Date.now() });
+  state.rounds.push({ scores, dealerIndex, at: Date.now() });
   saveActiveGame();
   renderGame();
 
@@ -406,6 +502,8 @@ function startGame() {
 
   state.players = names.map(name => ({ name, total: 0 }));
   state.rounds = [];
+  state.dealerOrder = [];
+  state.dealerSetupStartRound = 0;
   state.gameFinished = false;
   state.winnerIndex = null;
   saveActiveGame();
@@ -421,6 +519,7 @@ function resumeGame() {
   state.target = Number(saved.target || 0);
   state.players = saved.players.map(player => ({ name: player.name, total: Number(player.total || 0) }));
   state.rounds = saved.rounds || [];
+  normalizeDealerState(saved.dealerOrder, saved.dealerSetupStartRound);
   state.gameFinished = Boolean(saved.gameFinished);
   state.winnerIndex = Number.isInteger(saved.winnerIndex) ? saved.winnerIndex : null;
 
@@ -443,6 +542,8 @@ function newGameFromWinner() {
   clearActiveGame();
   state.players = [];
   state.rounds = [];
+  state.dealerOrder = [];
+  state.dealerSetupStartRound = 0;
   state.gameFinished = false;
   state.winnerIndex = null;
   showScreen("setup");
@@ -520,13 +621,17 @@ function renderHistory() {
     <div class="table-scroll">
       <table class="history-table">
         <thead>
-          <tr><th>Manche</th>${state.players.map(player => `<th>${escapeHtml(player.name)}</th>`).join("")}</tr>
+          <tr><th>Manche</th><th>Donneur</th>${state.players.map(player => `<th>${escapeHtml(player.name)}</th>`).join("")}</tr>
         </thead>
         <tbody>
           ${state.rounds.map((round, roundIndex) => `
-            <tr><td><strong>${roundIndex + 1}</strong></td>${round.scores.map(score => `<td>${signed(Number(score || 0))}</td>`).join("")}</tr>
+            <tr>
+              <td><strong>${roundIndex + 1}</strong></td>
+              <td>${Number.isInteger(round.dealerIndex) && state.players[round.dealerIndex] ? escapeHtml(state.players[round.dealerIndex].name) : "—"}</td>
+              ${round.scores.map(score => `<td>${signed(Number(score || 0))}</td>`).join("")}
+            </tr>
           `).join("")}
-          <tr><td><strong>Total</strong></td>${state.players.map(player => `<td><strong>${formatNumber(player.total)}</strong></td>`).join("")}</tr>
+          <tr><td><strong>Total</strong></td><td>—</td>${state.players.map(player => `<td><strong>${formatNumber(player.total)}</strong></td>`).join("")}</tr>
         </tbody>
       </table>
     </div>
@@ -601,6 +706,12 @@ els.resumeGameBtn.addEventListener("click", resumeGame);
 document.getElementById("validateRoundBtn").addEventListener("click", validateRound);
 document.getElementById("undoBtn").addEventListener("click", undoLastRound);
 document.getElementById("historyBtn").addEventListener("click", () => { renderHistory(); els.historyDialog.showModal(); });
+els.dealerOptions.addEventListener("click", event => {
+  const button = event.target.closest("[data-dealer-index]");
+  if (!button) return;
+  selectDealer(Number(button.dataset.dealerIndex));
+});
+els.dealerDialog.addEventListener("cancel", event => event.preventDefault());
 
 document.getElementById("finishGameBtn").addEventListener("click", () => {
   if (state.gameFinished) return;

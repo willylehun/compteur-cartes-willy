@@ -74,20 +74,69 @@ button { -webkit-user-select: none; user-select: none; }
   text-align: left;
   cursor: pointer;
 }
-.brand-card {
+.brand-mark {
   position: relative;
   flex: 0 0 auto;
-  width: 46px;
-  height: 57px;
-  border: 2px solid var(--gold);
-  border-radius: 11px;
-  background: var(--cream);
-  color: #181f1b;
-  box-shadow: var(--soft-shadow);
-  transform: rotate(-5deg);
+  width: 57px;
+  height: 61px;
 }
-.brand-card > span { position: absolute; left: 9px; top: 5px; font-size: 22px; }
-.brand-card small { position: absolute; right: 8px; bottom: 5px; font-family: Georgia, serif; font-weight: 800; }
+.brand-card {
+  position: absolute;
+  width: 40px;
+  height: 53px;
+  overflow: hidden;
+  border: 1px solid rgba(215,173,85,.8);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #fffef9, #f7e9c5);
+  box-shadow: 0 8px 18px rgba(2,20,13,.27);
+}
+.brand-card-back {
+  left: 2px;
+  top: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--red);
+  background:
+    repeating-linear-gradient(45deg, rgba(175,49,64,.09) 0 3px, transparent 3px 7px),
+    linear-gradient(145deg, #fffdf8, #f1dfb3);
+  font-family: Georgia, serif;
+  font-size: 24px;
+  transform: rotate(-11deg);
+}
+.brand-card-front {
+  right: 1px;
+  top: 1px;
+  color: #10251c;
+  transform: rotate(5deg);
+}
+.brand-card-front::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(215,173,85,.55);
+  border-radius: 7px;
+}
+.brand-rank {
+  position: absolute;
+  z-index: 1;
+  left: 7px;
+  top: 4px;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+.brand-suit {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-top: 6px;
+  color: var(--felt);
+  font-family: Georgia, serif;
+  font-size: 25px;
+  text-shadow: 0 1px 0 white;
+}
 .brand-copy { display: grid; min-width: 0; }
 .brand-copy strong {
   color: var(--gold-light);
@@ -448,25 +497,52 @@ button { -webkit-user-select: none; user-select: none; }
 .round-inputs { display: grid; gap: 9px; margin-bottom: 14px; }
 .round-input-row {
   display: grid;
-  grid-template-columns: minmax(82px, 1fr) 106px auto;
-  gap: 8px;
+  grid-template-columns: minmax(92px, 1fr) minmax(112px, 145px);
+  gap: 12px;
   align-items: center;
 }
 .round-player-name { display: flex; align-items: center; min-width: 0; gap: 7px; font-size: 13px; font-weight: 800; }
 .round-player-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.round-score-input { height: 44px; padding: 9px 8px; border-radius: 11px; font-size: 18px; text-align: center; font-weight: 750; }
-.quick-score-wrap { display: grid; grid-template-columns: repeat(2, 34px); gap: 4px; }
-.quick-score {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #d8d8d1;
-  border-radius: 9px;
-  color: var(--felt);
-  background: white;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
+.score-field {
+  position: relative;
 }
+.round-score-input {
+  width: 100%;
+  height: 48px;
+  padding: 9px 37px 9px 10px;
+  border-radius: 12px;
+  font-size: 19px;
+  text-align: right;
+  font-weight: 800;
+}
+.score-unit {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dealer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-bottom: 9px;
+  padding: 10px 14px;
+  border: 1px solid rgba(242,216,143,.32);
+  border-radius: 15px;
+  color: var(--gold-light);
+  background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(215,173,85,.08));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+.dealer-banner strong { margin-left: 5px; color: white; }
 
 .game-actions { display: grid; gap: 9px; margin-top: 13px; }
 
@@ -555,6 +631,42 @@ button { -webkit-user-select: none; user-select: none; }
 .podium-place { font-weight: 900; color: #846521; }
 .podium-score { font-weight: 900; color: var(--felt); }
 
+.dealer-card { text-align: center; }
+.dealer-symbol {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 10px;
+  place-items: center;
+  border: 2px solid #d9bd78;
+  border-radius: 17px;
+  color: var(--felt);
+  background: linear-gradient(145deg, #fff, #f2ddb0);
+  box-shadow: 0 8px 18px rgba(23,38,31,.14);
+  font-family: Georgia, serif;
+  font-size: 31px;
+  transform: rotate(-4deg);
+}
+.dealer-card h2 { margin: 4px 0 7px; font-family: Georgia, serif; font-size: 28px; }
+.dealer-card > p:not(.eyebrow) { margin: 0 auto; max-width: 430px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.dealer-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+.dealer-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #d9cfbb;
+  border-radius: 13px;
+  color: var(--ink);
+  background: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+.dealer-option .suit { flex: 0 0 auto; font-family: Georgia, serif; font-size: 21px; }
+.dealer-option .suit.red { color: var(--red); }
+.dealer-option:disabled { opacity: .38; cursor: not-allowed; }
+
 .toast {
   position: fixed;
   left: 50%;
@@ -583,17 +695,14 @@ button { -webkit-user-select: none; user-select: none; }
   .hero-card { padding-top: 38px; padding-bottom: 34px; }
   .score-board[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .score-board[data-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .round-input-row { grid-template-columns: minmax(120px, 1fr) 130px auto; }
-  .quick-score-wrap { grid-template-columns: repeat(4, 34px); }
+  .round-input-row { grid-template-columns: minmax(160px, 1fr) 160px; }
 }
 
 @media (max-width: 430px) {
   .brand-copy small { display: none; }
-  .extra-quick { display: none; }
   .panel-hint { display: none; }
   .segmented { gap: 6px; }
   .segment { font-size: 12px; }
-  .round-input-row { grid-template-columns: minmax(80px, 1fr) 92px auto; }
-  .quick-score-wrap { grid-template-columns: repeat(2, 31px); }
-  .quick-score { width: 31px; height: 31px; }
+  .round-input-row { grid-template-columns: minmax(88px, 1fr) minmax(108px, 132px); }
+  .dealer-options { grid-template-columns: 1fr; }
 }

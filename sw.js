@@ -1,4 +1,4 @@
-const CACHE_NAME = "willy-card-counter-v2";
+const CACHE_NAME = "willy-card-counter-v3";
 const ASSETS = [
   "./",
   "./index.html",

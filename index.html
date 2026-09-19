@@ -19,7 +19,13 @@
   <main class="app-shell">
     <header class="topbar">
       <button id="brandHomeBtn" class="brand" type="button" aria-label="Retour à l'accueil">
-        <span class="brand-card" aria-hidden="true"><span>♠</span><small>W</small></span>
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-card brand-card-back"><span>♥</span></span>
+          <span class="brand-card brand-card-front">
+            <span class="brand-rank">W</span>
+            <span class="brand-suit">♠</span>
+          </span>
+        </span>
         <span class="brand-copy">
           <strong>Counter By Willy</strong>
           <small>Parties · Scores · Classement</small>
@@ -105,6 +111,7 @@
         </div>
       </div>
 
+      <div id="dealerBanner" class="dealer-banner" aria-live="polite"></div>
       <div id="leaderBanner" class="leader-banner"></div>
       <div id="scoreBoard" class="score-board"></div>
 
@@ -116,7 +123,7 @@
           </div>
           <button id="historyBtn" class="small-outline-btn" type="button">Historique</button>
         </div>
-        <p class="round-help">Entre les points gagnés par chaque joueur. Les nombres négatifs sont acceptés.</p>
+        <p class="round-help">Chaque joueur saisit librement ses points. Ils seront ajoutés automatiquement à son total après validation de la manche.</p>
         <div id="roundInputs" class="round-inputs"></div>
         <button id="validateRoundBtn" class="primary-btn big-btn" type="button">
           <span>Valider la manche</span>
@@ -176,6 +183,16 @@
         <button id="newGameBtn" class="primary-btn" type="button">Nouvelle partie</button>
         <button id="keepPlayingBtn" class="secondary-light-btn" type="button">Voir la feuille de score</button>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="dealerDialog" class="modal dealer-modal">
+    <div class="modal-card dealer-card">
+      <div class="dealer-symbol" aria-hidden="true">♠</div>
+      <p class="eyebrow dark">ORDRE DE DISTRIBUTION</p>
+      <h2 id="dealerQuestion">Qui distribue cette manche ?</h2>
+      <p id="dealerHint"></p>
+      <div id="dealerOptions" class="dealer-options"></div>
     </div>
   </dialog>
 
