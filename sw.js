@@ -1,9 +1,11 @@
-const CACHE_NAME = "willy-card-counter-v15";
+const APP_VERSION = "16";
+const CACHE_NAME = `willy-card-counter-v${APP_VERSION}`;
 const ASSETS = [
   "./index.html",
-  "./style.css?v=15",
-  "./app.js?v=15",
-  "./manifest.json?v=15",
+  "./?app=v16",
+  "./style.css?v=16",
+  "./app.js?v=16",
+  "./manifest.json?v=16",
   "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
@@ -20,6 +22,14 @@ self.addEventListener("activate", event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+      .then(clients => Promise.all(clients.map(client => {
+        const currentUrl = new URL(client.url);
+        if (currentUrl.searchParams.get("app") === `v${APP_VERSION}`) return undefined;
+        return client
+          .navigate(new URL(`./?app=v${APP_VERSION}&updated=1`, self.registration.scope).href)
+          .catch(() => undefined);
+      })))
   );
 });
 

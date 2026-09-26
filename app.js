@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "15";
+const APP_VERSION = window.__COUNTER_BUILD__ || "16";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -189,6 +189,13 @@ function normalizeDealerState(order, setupStartRound) {
   state.dealerSetupStartRound = Number.isInteger(Number(setupStartRound))
     ? Math.max(0, Number(setupStartRound))
     : state.rounds.length;
+
+  if (state.dealerOrder.length < getRequiredDealerChoices()) {
+    const expectedOffset = state.rounds.length - state.dealerSetupStartRound;
+    if (expectedOffset !== state.dealerOrder.length) {
+      state.dealerSetupStartRound = Math.max(0, state.rounds.length - state.dealerOrder.length);
+    }
+  }
 
   if (state.dealerOrder.length >= getRequiredDealerChoices()) {
     const missingIndex = state.players.findIndex((_, index) => !state.dealerOrder.includes(index));
@@ -937,13 +944,9 @@ async function checkPublishedVersion() {
       const keys = await caches.keys();
       await Promise.all(keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key)));
     }
-    const setupInProgress = !state.players.length && (
-      state.playerCount !== 2
-      || state.target !== 500
-      || [...els.playerInputs.querySelectorAll("input")].some(input => input.value.trim())
-    );
-    if (setupInProgress || (state.players.length && !state.gameFinished)) return;
-    window.location.reload();
+    const registration = await navigator.serviceWorker?.getRegistration();
+    await registration?.update();
+    window.location.replace(`./?app=v${published.version}&updated=1`);
   } catch {}
 }
 
@@ -957,5 +960,11 @@ if ("serviceWorker" in navigator) {
       .register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: "none" })
       .then(registration => registration.update())
       .catch(() => {});
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (sessionStorage.getItem("willy-card-controller-reload") === APP_VERSION) return;
+    sessionStorage.setItem("willy-card-controller-reload", APP_VERSION);
+    window.location.replace(`./?app=v${APP_VERSION}&updated=1`);
   });
 }
