@@ -10,6 +10,7 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Addition automatique des points au total de chaque joueur
 - Rotation du donneur apprise sur les premières manches puis annoncée automatiquement
 - Rotation vérifiée pour 2, 3 et 4 joueurs, avec un donneur explicite pour chaque manche
+- Écran tactile interne pour choisir le distributeur, compatible avec l'application installée
 - Nom du distributeur affiché directement dans chaque manche en cours
 - Total automatique et indicateur du joueur en tête
 - Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final

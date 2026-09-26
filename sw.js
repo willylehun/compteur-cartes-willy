@@ -1,9 +1,9 @@
-const CACHE_NAME = "willy-card-counter-v14";
+const CACHE_NAME = "willy-card-counter-v15";
 const ASSETS = [
   "./index.html",
-  "./style.css?v=14",
-  "./app.js?v=14",
-  "./manifest.json?v=14",
+  "./style.css?v=15",
+  "./app.js?v=15",
+  "./manifest.json?v=15",
   "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",

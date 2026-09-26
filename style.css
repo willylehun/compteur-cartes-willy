@@ -652,7 +652,8 @@ body.modal-open { overflow: hidden; }
 .recent-game span:last-child { color: var(--muted); }
 .empty-state { padding: 27px 8px 15px; color: var(--muted); text-align: center; font-size: 13px; }
 
-.winner-overlay {
+.winner-overlay,
+.dealer-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -663,7 +664,8 @@ body.modal-open { overflow: hidden; }
   background: rgba(2,17,11,.82);
   backdrop-filter: blur(5px);
 }
-.winner-overlay .winner-card {
+.winner-overlay .winner-card,
+.dealer-overlay .dealer-card {
   width: min(100%, 610px);
   max-height: calc(100vh - 36px);
   overflow: auto;

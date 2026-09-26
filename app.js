@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "14";
+const APP_VERSION = window.__COUNTER_BUILD__ || "15";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -197,7 +197,7 @@ function normalizeDealerState(order, setupStartRound) {
 }
 
 function getRequiredDealerChoices() {
-  return state.playerCount === 2 ? 1 : state.playerCount - 1;
+  return ({ 2: 1, 3: 2, 4: 3 })[state.playerCount] || 1;
 }
 
 function getCurrentDealerIndex() {
@@ -243,7 +243,7 @@ function renderDealerBanner() {
 }
 
 function requestDealerIfNeeded() {
-  if (!dealerChoiceIsNeeded() || els.dealerDialog.open) return;
+  if (!dealerChoiceIsNeeded() || isDealerOverlayOpen()) return;
 
   const roundNumber = state.rounds.length + 1;
   const questionsRequired = getRequiredDealerChoices();
@@ -261,7 +261,28 @@ function requestDealerIfNeeded() {
       </button>
     `;
   }).join("");
-  els.dealerDialog.showModal();
+  els.dealerOptions.querySelectorAll("[data-dealer-index]").forEach(button => {
+    bindReliableTap(button, () => selectDealer(Number(button.dataset.dealerIndex)));
+  });
+  openDealerOverlay();
+}
+
+function isDealerOverlayOpen() {
+  return !els.dealerDialog.classList.contains("hidden");
+}
+
+function openDealerOverlay() {
+  els.dealerDialog.classList.remove("hidden");
+  els.dealerDialog.hidden = false;
+  els.dealerDialog.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeDealerOverlay() {
+  els.dealerDialog.classList.add("hidden");
+  els.dealerDialog.hidden = true;
+  els.dealerDialog.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 }
 
 function selectDealer(index) {
@@ -273,7 +294,7 @@ function selectDealer(index) {
     if (missingIndex >= 0) state.dealerOrder.push(missingIndex);
   }
 
-  els.dealerDialog.close();
+  closeDealerOverlay();
   saveActiveGame();
   renderDealerBanner();
   showToast(`${state.players[index].name} distribue la manche ${state.rounds.length + 1}.`);
@@ -478,6 +499,8 @@ function finishWithWinner(winnerIndex, automatic = false, winnerIndexes = [winne
   if (state.gameFinished) return;
   state.gameFinished = true;
   state.winnerIndex = winnerIndex;
+
+  if (isDealerOverlayOpen()) closeDealerOverlay();
 
   document.querySelectorAll("dialog[open]").forEach(dialog => {
     try {
@@ -872,12 +895,6 @@ els.resumeGameBtn.addEventListener("click", resumeGame);
 document.getElementById("validateRoundBtn").addEventListener("click", validateRound);
 document.getElementById("undoBtn").addEventListener("click", undoLastRound);
 document.getElementById("historyBtn").addEventListener("click", () => { renderHistory(); els.historyDialog.showModal(); });
-els.dealerOptions.addEventListener("click", event => {
-  const button = event.target.closest("[data-dealer-index]");
-  if (!button) return;
-  selectDealer(Number(button.dataset.dealerIndex));
-});
-els.dealerDialog.addEventListener("cancel", event => event.preventDefault());
 
 bindReliableTap(document.getElementById("finishGameBtn"), () => {
   if (state.gameFinished) return;
