@@ -1,11 +1,11 @@
-const APP_VERSION = "18";
+const APP_VERSION = "19";
 const CACHE_NAME = `willy-card-counter-v${APP_VERSION}`;
 const ASSETS = [
   "./index.html",
-  "./?app=v18",
-  "./style.css?v=18",
-  "./app.js?v=18",
-  "./manifest.json?v=18",
+  "./?app=v19",
+  "./style.css?v=19",
+  "./app.js?v=19",
+  "./manifest.json?v=19",
   "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",

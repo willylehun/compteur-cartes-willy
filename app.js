@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "18";
+const APP_VERSION = window.__COUNTER_BUILD__ || "19";
 
 const VALID_TARGETS = [0, 500, 1000];
 
@@ -258,7 +258,10 @@ function renderDealerBanner() {
 }
 
 function requestDealerIfNeeded() {
-  if (!dealerChoiceIsNeeded() || isDealerOverlayOpen()) return;
+  if (!dealerChoiceIsNeeded()) {
+    if (isDealerOverlayOpen()) closeDealerOverlay();
+    return;
+  }
 
   const roundNumber = state.rounds.length + 1;
   const questionsRequired = getRequiredDealerChoices();
@@ -299,6 +302,7 @@ function closeDealerOverlay() {
   els.dealerDialog.classList.add("hidden");
   els.dealerDialog.hidden = true;
   els.dealerDialog.setAttribute("aria-hidden", "true");
+  els.dealerOptions.replaceChildren();
 }
 
 function selectDealer(index) {
@@ -674,6 +678,7 @@ function startGame() {
     return;
   }
 
+  closeDealerOverlay();
   state.playerCount = names.length;
   state.target = normalizeTarget(document.querySelector("#targetSelector [data-target].active")?.dataset.target);
   state.players = names.map(name => ({ name, total: 0 }));
@@ -692,6 +697,7 @@ function resumeGame() {
   const saved = getSavedGame();
   if (!saved?.players?.length) return;
 
+  closeDealerOverlay();
   state.playerCount = saved.players.length;
   state.target = normalizeTarget(saved.target);
   state.players = saved.players.map(player => ({ name: player.name, total: 0 }));
@@ -743,6 +749,7 @@ function syncSetupControls() {
 
 function newGameFromWinner() {
   closeWinnerOverlay();
+  closeDealerOverlay();
   clearActiveGame();
   state.players = [];
   state.rounds = [];
@@ -755,6 +762,7 @@ function newGameFromWinner() {
 }
 
 function showScreen(screen) {
+  if (screen === "setup") closeDealerOverlay();
   els.setupScreen.classList.toggle("active", screen === "setup");
   els.gameScreen.classList.toggle("active", screen === "game");
   window.scrollTo({ top: 0, behavior: "smooth" });
