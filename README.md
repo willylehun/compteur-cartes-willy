@@ -13,6 +13,7 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Écran tactile interne pour choisir le distributeur, compatible avec l'application installée
 - Mise à jour forcée de l'application installée sans perdre la partie en cours
 - Validation tactile verrouillée à une seule manche et ouverture différée du choix du donneur suivant
+- Question du donneur intégrée directement dans la page de manche et objectif sécurisé à 500, 1000 ou sans limite
 - Nom du distributeur affiché directement dans chaque manche en cours
 - Total automatique et indicateur du joueur en tête
 - Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final

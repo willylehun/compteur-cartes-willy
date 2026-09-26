@@ -652,8 +652,7 @@ body.modal-open { overflow: hidden; }
 .recent-game span:last-child { color: var(--muted); }
 .empty-state { padding: 27px 8px 15px; color: var(--muted); text-align: center; font-size: 13px; }
 
-.winner-overlay,
-.dealer-overlay {
+.winner-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -663,11 +662,8 @@ body.modal-open { overflow: hidden; }
   padding: max(18px, env(safe-area-inset-top)) 15px max(18px, env(safe-area-inset-bottom));
   background: rgba(2,17,11,.82);
   backdrop-filter: blur(5px);
-  overscroll-behavior: contain;
-  touch-action: manipulation;
 }
-.winner-overlay .winner-card,
-.dealer-overlay .dealer-card {
+.winner-overlay .winner-card {
   width: min(100%, 610px);
   max-height: calc(100vh - 36px);
   overflow: auto;
@@ -708,12 +704,26 @@ body.modal-open { overflow: hidden; }
   .confetti-piece { animation: none; }
 }
 
-.dealer-card { text-align: center; }
+.dealer-prompt-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 13px;
+  margin-bottom: 11px;
+  padding: 16px;
+  border: 2px solid #d9bd78;
+  border-radius: 20px;
+  color: var(--ink);
+  background: linear-gradient(145deg, #fffdf7, #f5e5bd);
+  box-shadow: var(--soft-shadow);
+  overscroll-behavior: contain;
+  touch-action: manipulation;
+}
+.dealer-prompt-copy { min-width: 0; }
 .dealer-symbol {
   display: grid;
   width: 58px;
   height: 58px;
-  margin: 0 auto 10px;
+  margin: 0;
   place-items: center;
   border: 2px solid #d9bd78;
   border-radius: 17px;
@@ -724,9 +734,9 @@ body.modal-open { overflow: hidden; }
   font-size: 31px;
   transform: rotate(-4deg);
 }
-.dealer-card h2 { margin: 4px 0 7px; font-family: Georgia, serif; font-size: 28px; }
-.dealer-card > p:not(.eyebrow) { margin: 0 auto; max-width: 430px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.dealer-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+.dealer-prompt-panel h2 { margin: 3px 0 5px; font-family: Georgia, serif; font-size: 23px; }
+.dealer-prompt-panel p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.dealer-options { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .dealer-option {
   display: flex;
   align-items: center;
@@ -786,4 +796,6 @@ body.modal-open { overflow: hidden; }
   .round-panel-tools { max-width: 58%; }
   .round-dealer-badge { line-height: 1.25; }
   .dealer-options { grid-template-columns: 1fr; }
+  .dealer-prompt-panel { grid-template-columns: 48px minmax(0, 1fr); padding: 13px; }
+  .dealer-symbol { width: 48px; height: 48px; font-size: 26px; }
 }

@@ -5,7 +5,9 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "17";
+const APP_VERSION = window.__COUNTER_BUILD__ || "18";
+
+const VALID_TARGETS = [0, 500, 1000];
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -55,6 +57,11 @@ const els = {
 
 function safeParse(value, fallback) {
   try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
+}
+
+function normalizeTarget(value) {
+  const target = Number(value);
+  return VALID_TARGETS.includes(target) ? target : 500;
 }
 
 function getStats() {
@@ -283,9 +290,8 @@ function openDealerOverlay() {
   els.dealerDialog.classList.remove("hidden");
   els.dealerDialog.hidden = false;
   els.dealerDialog.setAttribute("aria-hidden", "false");
-  document.body.classList.add("modal-open");
   window.requestAnimationFrame(() => {
-    els.dealerOptions.querySelector("button:not(:disabled)")?.focus({ preventScroll: true });
+    els.dealerDialog.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 }
 
@@ -293,7 +299,6 @@ function closeDealerOverlay() {
   els.dealerDialog.classList.add("hidden");
   els.dealerDialog.hidden = true;
   els.dealerDialog.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("modal-open");
 }
 
 function selectDealer(index) {
@@ -479,7 +484,7 @@ function validateRound() {
     at: Date.now()
   });
 
-  if (state.target > 0 && checkTargetWinner()) {
+  if (checkTargetWinner()) {
     roundSubmissionLocked = false;
     return;
   }
@@ -491,9 +496,13 @@ function validateRound() {
 }
 
 function checkTargetWinner() {
+  const target = normalizeTarget(state.target);
+  state.target = target;
+  if (target === 0) return false;
+
   const qualified = state.players
     .map((player, index) => ({ ...player, index }))
-    .filter(player => player.total >= state.target)
+    .filter(player => player.total >= target)
     .sort((a, b) => b.total - a.total);
 
   if (!qualified.length) {
@@ -666,6 +675,7 @@ function startGame() {
   }
 
   state.playerCount = names.length;
+  state.target = normalizeTarget(document.querySelector("#targetSelector [data-target].active")?.dataset.target);
   state.players = names.map(name => ({ name, total: 0 }));
   state.rounds = [];
   state.dealerOrder = [];
@@ -683,7 +693,7 @@ function resumeGame() {
   if (!saved?.players?.length) return;
 
   state.playerCount = saved.players.length;
-  state.target = Number(saved.target || 0);
+  state.target = normalizeTarget(saved.target);
   state.players = saved.players.map(player => ({ name: player.name, total: 0 }));
   state.rounds = normalizeRounds(saved.rounds);
   recalculateTotalsFromRounds();
