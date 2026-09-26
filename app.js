@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "19";
+const APP_VERSION = window.__COUNTER_BUILD__ || "20";
 
 const VALID_TARGETS = [0, 500, 1000];
 
@@ -59,22 +59,40 @@ function safeParse(value, fallback) {
   try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
 }
 
+function safeStorageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn("La sauvegarde locale est indisponible.", error);
+    return false;
+  }
+}
+
+function safeStorageRemove(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
+
 function normalizeTarget(value) {
   const target = Number(value);
   return VALID_TARGETS.includes(target) ? target : 500;
 }
 
 function getStats() {
-  return safeParse(localStorage.getItem(STORAGE_KEYS.stats), {});
+  return safeParse(safeStorageGet(STORAGE_KEYS.stats), {});
 }
 
 function saveStats(stats) {
-  localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify(stats));
+  safeStorageSet(STORAGE_KEYS.stats, JSON.stringify(stats));
   refreshKnownPlayers();
 }
 
 function getRecentGames() {
-  return safeParse(localStorage.getItem(STORAGE_KEYS.recentGames), []);
+  return safeParse(safeStorageGet(STORAGE_KEYS.recentGames), []);
 }
 
 function saveRecentGame(winner) {
@@ -87,14 +105,14 @@ function saveRecentGame(winner) {
     rounds: state.rounds.length,
     finishedAt: Date.now()
   });
-  localStorage.setItem(STORAGE_KEYS.recentGames, JSON.stringify(games.slice(0, 20)));
+  safeStorageSet(STORAGE_KEYS.recentGames, JSON.stringify(games.slice(0, 20)));
 }
 
 function getSavedGame() {
-  const current = safeParse(localStorage.getItem(STORAGE_KEYS.activeGame), null);
+  const current = safeParse(safeStorageGet(STORAGE_KEYS.activeGame), null);
   if (current?.players?.length) return current;
 
-  const legacy = safeParse(localStorage.getItem(STORAGE_KEYS.legacyActiveGame), null);
+  const legacy = safeParse(safeStorageGet(STORAGE_KEYS.legacyActiveGame), null);
   if (!legacy?.players?.length) return null;
 
   const rounds = (legacy.history || []).map(entry => {
@@ -128,14 +146,14 @@ function saveActiveGame() {
     winnerIndex: state.winnerIndex,
     savedAt: Date.now()
   };
-  localStorage.setItem(STORAGE_KEYS.activeGame, JSON.stringify(payload));
-  localStorage.removeItem(STORAGE_KEYS.legacyActiveGame);
+  safeStorageSet(STORAGE_KEYS.activeGame, JSON.stringify(payload));
+  safeStorageRemove(STORAGE_KEYS.legacyActiveGame);
   refreshResumeCard();
 }
 
 function clearActiveGame() {
-  localStorage.removeItem(STORAGE_KEYS.activeGame);
-  localStorage.removeItem(STORAGE_KEYS.legacyActiveGame);
+  safeStorageRemove(STORAGE_KEYS.activeGame);
+  safeStorageRemove(STORAGE_KEYS.legacyActiveGame);
   refreshResumeCard();
 }
 
@@ -852,8 +870,8 @@ function renderHistory() {
 
 function resetStats() {
   if (!window.confirm("Supprimer toutes les statistiques et l'historique des parties ?")) return;
-  localStorage.removeItem(STORAGE_KEYS.stats);
-  localStorage.removeItem(STORAGE_KEYS.recentGames);
+  safeStorageRemove(STORAGE_KEYS.stats);
+  safeStorageRemove(STORAGE_KEYS.recentGames);
   refreshKnownPlayers();
   renderStats();
   showToast("Statistiques réinitialisées.");
@@ -899,25 +917,9 @@ function showToast(message) {
 }
 
 function bindReliableTap(button, action) {
-  let lastTouchAt = 0;
-
-  const runTouchAction = event => {
-    if (button.disabled) return;
-    lastTouchAt = Date.now();
+  button.addEventListener("click", event => {
     event.preventDefault();
-    action();
-  };
-
-  if (window.PointerEvent) {
-    button.addEventListener("pointerup", event => {
-      if (event.pointerType === "touch") runTouchAction(event);
-    }, { passive: false });
-  } else {
-    button.addEventListener("touchend", runTouchAction, { passive: false });
-  }
-
-  button.addEventListener("click", () => {
-    if (Date.now() - lastTouchAt < 700 || button.disabled) return;
+    if (button.disabled) return;
     action();
   });
 }
@@ -1003,8 +1005,10 @@ if ("serviceWorker" in navigator) {
   });
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (sessionStorage.getItem("willy-card-controller-reload") === APP_VERSION) return;
-    sessionStorage.setItem("willy-card-controller-reload", APP_VERSION);
+    try {
+      if (sessionStorage.getItem("willy-card-controller-reload") === APP_VERSION) return;
+      sessionStorage.setItem("willy-card-controller-reload", APP_VERSION);
+    } catch {}
     window.location.replace(`./?app=v${APP_VERSION}&updated=1`);
   });
 }

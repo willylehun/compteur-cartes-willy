@@ -15,6 +15,7 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Validation tactile verrouillée à une seule manche et ouverture différée du choix du donneur suivant
 - Question du donneur intégrée directement dans la page de manche et objectif sécurisé à 500, 1000 ou sans limite
 - Réinitialisation complète de la question du donneur lors d'un retour à l'accueil ou du lancement d'une nouvelle partie
+- Clic tactile natif sur les boutons de donneur et de validation, avec sauvegarde locale non bloquante
 - Nom du distributeur affiché directement dans chaque manche en cours
 - Total automatique et indicateur du joueur en tête
 - Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final
