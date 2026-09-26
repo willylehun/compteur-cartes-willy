@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "16";
+const APP_VERSION = window.__COUNTER_BUILD__ || "17";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -26,6 +26,7 @@ const state = {
 };
 
 let gameLaunchedThisSession = false;
+let roundSubmissionLocked = false;
 
 const els = {
   setupScreen: document.getElementById("setupScreen"),
@@ -283,6 +284,9 @@ function openDealerOverlay() {
   els.dealerDialog.hidden = false;
   els.dealerDialog.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
+  window.requestAnimationFrame(() => {
+    els.dealerOptions.querySelector("button:not(:disabled)")?.focus({ preventScroll: true });
+  });
 }
 
 function closeDealerOverlay() {
@@ -307,7 +311,7 @@ function selectDealer(index) {
   showToast(`${state.players[index].name} distribue la manche ${state.rounds.length + 1}.`);
 }
 
-function renderGame() {
+function renderGame({ deferDealerPrompt = false } = {}) {
   const roundNumber = state.rounds.length + 1;
   if (state.gameFinished) {
     const completedRounds = state.rounds.length;
@@ -345,7 +349,13 @@ function renderGame() {
   renderLeaderBanner();
   renderRoundInputs();
   setGameReadOnly(state.gameFinished);
-  requestDealerIfNeeded();
+  if (deferDealerPrompt) {
+    window.setTimeout(() => {
+      if (!state.gameFinished) requestDealerIfNeeded();
+    }, 180);
+  } else {
+    requestDealerIfNeeded();
+  }
 }
 
 function renderLeaderBanner() {
@@ -428,6 +438,8 @@ function updateRoundTotalPreview(index, value) {
 }
 
 function validateRound() {
+  if (roundSubmissionLocked) return;
+
   if (state.gameFinished) {
     showToast("Cette partie est déjà terminée.");
     return;
@@ -440,10 +452,16 @@ function validateRound() {
     return;
   }
 
+  roundSubmissionLocked = true;
+  document.activeElement?.blur();
+  document.getElementById("validateRoundBtn").disabled = true;
+
   const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
   const scores = inputs.map(input => Number(input.value.trim() === "" ? 0 : input.value));
 
   if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
+    roundSubmissionLocked = false;
+    document.getElementById("validateRoundBtn").disabled = false;
     showToast("Utilise uniquement des nombres entiers.");
     return;
   }
@@ -461,10 +479,14 @@ function validateRound() {
     at: Date.now()
   });
 
-  if (state.target > 0 && checkTargetWinner()) return;
+  if (state.target > 0 && checkTargetWinner()) {
+    roundSubmissionLocked = false;
+    return;
+  }
 
   saveActiveGame();
-  renderGame();
+  renderGame({ deferDealerPrompt: true });
+  roundSubmissionLocked = false;
   showToast(`Manche ${state.rounds.length} enregistrée.`);
 }
 
@@ -899,7 +921,7 @@ document.getElementById("targetSelector").addEventListener("click", event => {
 
 document.getElementById("startGameBtn").addEventListener("click", startGame);
 els.resumeGameBtn.addEventListener("click", resumeGame);
-document.getElementById("validateRoundBtn").addEventListener("click", validateRound);
+bindReliableTap(document.getElementById("validateRoundBtn"), validateRound);
 document.getElementById("undoBtn").addEventListener("click", undoLastRound);
 document.getElementById("historyBtn").addEventListener("click", () => { renderHistory(); els.historyDialog.showModal(); });
 

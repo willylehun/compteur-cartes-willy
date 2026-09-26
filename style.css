@@ -663,6 +663,8 @@ body.modal-open { overflow: hidden; }
   padding: max(18px, env(safe-area-inset-top)) 15px max(18px, env(safe-area-inset-bottom));
   background: rgba(2,17,11,.82);
   backdrop-filter: blur(5px);
+  overscroll-behavior: contain;
+  touch-action: manipulation;
 }
 .winner-overlay .winner-card,
 .dealer-overlay .dealer-card {
@@ -737,6 +739,7 @@ body.modal-open { overflow: hidden; }
   background: white;
   font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .dealer-option .suit { flex: 0 0 auto; font-family: Georgia, serif; font-size: 21px; }
 .dealer-option .suit.red { color: var(--red); }
