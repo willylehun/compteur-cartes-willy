@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "13";
+const APP_VERSION = window.__COUNTER_BUILD__ || "14";
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -190,10 +190,14 @@ function normalizeDealerState(order, setupStartRound) {
     ? Math.max(0, Number(setupStartRound))
     : state.rounds.length;
 
-  if (state.dealerOrder.length === state.playerCount - 1) {
+  if (state.dealerOrder.length >= getRequiredDealerChoices()) {
     const missingIndex = state.players.findIndex((_, index) => !state.dealerOrder.includes(index));
     if (missingIndex >= 0) state.dealerOrder.push(missingIndex);
   }
+}
+
+function getRequiredDealerChoices() {
+  return state.playerCount === 2 ? 1 : state.playerCount - 1;
 }
 
 function getCurrentDealerIndex() {
@@ -209,10 +213,24 @@ function getCurrentDealerIndex() {
 function dealerChoiceIsNeeded() {
   if (state.gameFinished || !state.players.length || state.dealerOrder.length === state.playerCount) return false;
   const offset = state.rounds.length - state.dealerSetupStartRound;
-  return offset >= 0 && offset < state.playerCount - 1 && !Number.isInteger(state.dealerOrder[offset]);
+  return offset >= 0 && offset < getRequiredDealerChoices() && !Number.isInteger(state.dealerOrder[offset]);
 }
 
 function renderDealerBanner() {
+  if (state.gameFinished) {
+    const lastRound = state.rounds.at(-1);
+    const lastDealerIndex = Number(lastRound?.dealerIndex);
+    if (Number.isInteger(lastDealerIndex) && state.players[lastDealerIndex]) {
+      const lastDealerName = state.players[lastDealerIndex].name;
+      els.dealerBanner.innerHTML = `♠ Dernier donneur · manche ${state.rounds.length} : <strong>${escapeHtml(lastDealerName)}</strong>`;
+      els.roundDealerBadge.innerHTML = `♠ Dernière distribution : <strong>${escapeHtml(lastDealerName)}</strong>`;
+    } else {
+      els.dealerBanner.textContent = "♠ Partie terminée.";
+      els.roundDealerBadge.textContent = "♠ Aucune manche jouée";
+    }
+    return;
+  }
+
   const dealerIndex = getCurrentDealerIndex();
   if (dealerIndex === null) {
     els.dealerBanner.innerHTML = "♠ Choisis le donneur avant de saisir les points.";
@@ -228,7 +246,7 @@ function requestDealerIfNeeded() {
   if (!dealerChoiceIsNeeded() || els.dealerDialog.open) return;
 
   const roundNumber = state.rounds.length + 1;
-  const questionsRequired = state.playerCount - 1;
+  const questionsRequired = getRequiredDealerChoices();
   els.dealerQuestion.textContent = `Qui distribue la manche ${roundNumber} ?`;
   els.dealerHint.textContent = state.playerCount === 2
     ? "Choisis le premier donneur. Ensuite, l'application alternera automatiquement entre les deux joueurs."
@@ -250,7 +268,7 @@ function selectDealer(index) {
   if (!dealerChoiceIsNeeded() || state.dealerOrder.includes(index) || !state.players[index]) return;
 
   state.dealerOrder.push(index);
-  if (state.dealerOrder.length === state.playerCount - 1) {
+  if (state.dealerOrder.length >= getRequiredDealerChoices()) {
     const missingIndex = state.players.findIndex((_, playerIndex) => !state.dealerOrder.includes(playerIndex));
     if (missingIndex >= 0) state.dealerOrder.push(missingIndex);
   }
@@ -263,8 +281,14 @@ function selectDealer(index) {
 
 function renderGame() {
   const roundNumber = state.rounds.length + 1;
-  els.roundBadge.textContent = `Manche ${roundNumber}`;
-  els.roundTitle.textContent = `Manche ${roundNumber}`;
+  if (state.gameFinished) {
+    const completedRounds = state.rounds.length;
+    els.roundBadge.textContent = `${completedRounds} manche${completedRounds > 1 ? "s" : ""}`;
+    els.roundTitle.textContent = "Partie terminée";
+  } else {
+    els.roundBadge.textContent = `Manche ${roundNumber}`;
+    els.roundTitle.textContent = `Manche ${roundNumber}`;
+  }
   els.targetBadge.textContent = state.target > 0 ? `Objectif ${state.target}` : "Sans limite";
   document.getElementById("finishGameBtn").classList.remove("hidden");
   els.scoreBoard.dataset.count = String(state.playerCount);
@@ -402,7 +426,12 @@ function validateRound() {
   });
 
   scores.forEach((score, index) => { state.players[index].total += score; });
-  state.rounds.push({ scores, dealerIndex, at: Date.now() });
+  state.rounds.push({
+    roundNumber: state.rounds.length + 1,
+    scores,
+    dealerIndex,
+    at: Date.now()
+  });
 
   if (state.target > 0 && checkTargetWinner()) return;
 
@@ -584,6 +613,7 @@ function startGame() {
     return;
   }
 
+  state.playerCount = names.length;
   state.players = names.map(name => ({ name, total: 0 }));
   state.rounds = [];
   state.dealerOrder = [];
@@ -600,10 +630,11 @@ function resumeGame() {
   const saved = getSavedGame();
   if (!saved?.players?.length) return;
 
-  state.playerCount = Number(saved.playerCount || saved.players.length);
+  state.playerCount = saved.players.length;
   state.target = Number(saved.target || 0);
-  state.players = saved.players.map(player => ({ name: player.name, total: Number(player.total || 0) }));
-  state.rounds = saved.rounds || [];
+  state.players = saved.players.map(player => ({ name: player.name, total: 0 }));
+  state.rounds = normalizeRounds(saved.rounds);
+  recalculateTotalsFromRounds();
   normalizeDealerState(saved.dealerOrder, saved.dealerSetupStartRound);
   state.gameFinished = Boolean(saved.gameFinished);
   state.winnerIndex = Number.isInteger(saved.winnerIndex) ? saved.winnerIndex : null;
@@ -614,6 +645,29 @@ function resumeGame() {
   showScreen("game");
   if (!state.gameFinished && state.target > 0 && checkTargetWinner()) return;
   renderGame();
+}
+
+function normalizeRounds(rounds) {
+  return (Array.isArray(rounds) ? rounds : []).map((round, roundIndex) => {
+    const dealerIndex = round?.dealerIndex;
+    return {
+      roundNumber: roundIndex + 1,
+      scores: Array.from({ length: state.playerCount }, (_, playerIndex) => {
+        const score = Number(round?.scores?.[playerIndex] ?? 0);
+        return Number.isFinite(score) && Number.isInteger(score) ? score : 0;
+      }),
+      dealerIndex: dealerIndex !== null && dealerIndex !== undefined && Number.isInteger(Number(dealerIndex))
+        ? Number(dealerIndex)
+        : null,
+      at: Number(round?.at || Date.now())
+    };
+  });
+}
+
+function recalculateTotalsFromRounds() {
+  state.players.forEach((player, playerIndex) => {
+    player.total = state.rounds.reduce((total, round) => total + Number(round.scores[playerIndex] || 0), 0);
+  });
 }
 
 function syncSetupControls() {
@@ -866,6 +920,12 @@ async function checkPublishedVersion() {
       const keys = await caches.keys();
       await Promise.all(keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key)));
     }
+    const setupInProgress = !state.players.length && (
+      state.playerCount !== 2
+      || state.target !== 500
+      || [...els.playerInputs.querySelectorAll("input")].some(input => input.value.trim())
+    );
+    if (setupInProgress || (state.players.length && !state.gameFinished)) return;
     window.location.reload();
   } catch {}
 }
@@ -876,12 +936,6 @@ document.addEventListener("visibilitychange", () => {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    const reloadKey = `willy-sw-reload-${APP_VERSION}`;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (sessionStorage.getItem(reloadKey)) return;
-      sessionStorage.setItem(reloadKey, "1");
-      window.location.reload();
-    });
     navigator.serviceWorker
       .register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: "none" })
       .then(registration => registration.update())

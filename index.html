@@ -11,7 +11,7 @@
   <title>Counter By Willy</title>
   <script>
     (() => {
-      const build = "13";
+      const build = "14";
       window.__COUNTER_BUILD__ = build;
       try {
         const previousBuild = localStorage.getItem("willy-card-build");
@@ -22,14 +22,11 @@
           ));
         }
       } catch {}
-      window.addEventListener("pageshow", event => {
-        if (event.persisted) window.location.reload();
-      });
     })();
   </script>
-  <link rel="manifest" href="manifest.json?v=13" />
+  <link rel="manifest" href="manifest.json?v=14" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=13" />
+  <link rel="stylesheet" href="style.css?v=14" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -163,7 +160,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span> <small>v13</small>
+      <span>♠</span> by Willy <span>♥</span> <small>v14</small>
     </footer>
   </main>
 
@@ -234,6 +231,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

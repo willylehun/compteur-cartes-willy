@@ -9,6 +9,7 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Total actuel clairement visible à côté du nom de chaque joueur et mis à jour pendant la saisie
 - Addition automatique des points au total de chaque joueur
 - Rotation du donneur apprise sur les premières manches puis annoncée automatiquement
+- Rotation vérifiée pour 2, 3 et 4 joueurs, avec un donneur explicite pour chaque manche
 - Nom du distributeur affiché directement dans chaque manche en cours
 - Total automatique et indicateur du joueur en tête
 - Détection automatique du vainqueur quand l'objectif est atteint, avec confettis et classement final
@@ -18,6 +19,8 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Écran de classement final indépendant du composant de dialogue du navigateur mobile
 - Mise à jour réseau prioritaire des scripts et styles de la PWA
 - Vérification automatique de la version au retour dans l'application installée
+- Aucune actualisation forcée pendant la configuration ou une partie en cours
+- Recalcul des totaux depuis l'historique lors de la reprise d'une partie
 - Icône SVG identique pour le bouton des statistiques sur le web et sur téléphone
 - Bouton de reprise affiché uniquement après le rechargement d'une partie réellement inachevée
 - Classement final affiché même lorsque plusieurs joueurs terminent à égalité
