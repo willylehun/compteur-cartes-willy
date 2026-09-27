@@ -1,4 +1,5 @@
 import { readdir, readFile, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 const ROOT = path.resolve(new URL("..", import.meta.url).pathname);
@@ -16,6 +17,10 @@ const REQUIRED_RUNTIME_FILES = [
 ];
 const TEXT_EXTENSIONS = new Set(["", ".css", ".html", ".js", ".json", ".md", ".mjs", ".txt", ".yaml", ".yml"]);
 const IGNORED_DIRECTORIES = new Set([".git", "_site", "coverage", "node_modules"]);
+
+function sha384Integrity(content) {
+  return `sha384-${createHash("sha384").update(content).digest("base64")}`;
+}
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -68,17 +73,22 @@ assert(manifest.start_url === `./?app=v${version}`, "Version start_url désynchr
 const requiredCspDirectives = [
   "default-src 'none'",
   "script-src 'self'",
+  "script-src-attr 'none'",
+  "style-src-attr 'none'",
   "connect-src 'self'",
   "worker-src 'self'",
   "object-src 'none'",
-  "frame-ancestors 'none'",
   "base-uri 'none'",
-  "form-action 'none'"
+  "form-action 'none'",
+  "trusted-types counter-renderer",
+  "require-trusted-types-for 'script'"
 ];
 for (const directive of requiredCspDirectives) {
   assert(indexHtml.includes(directive), `Directive CSP absente : ${directive}`);
   assert(serviceWorker.includes(directive), `Directive CSP absente du Service Worker : ${directive}`);
 }
+assert(serviceWorker.includes("frame-ancestors 'none'"), "Protection CSP frame-ancestors absente du Service Worker.");
+assert(!indexHtml.includes("frame-ancestors 'none'"), "frame-ancestors est invalide dans une CSP livrée par balise meta.");
 assert(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(indexHtml), "Un script inline empêcherait une CSP stricte.");
 assert(!/\son[a-z]+\s*=/i.test(indexHtml), "Gestionnaire d'événement HTML inline détecté.");
 assert(!indexHtml.includes("'unsafe-inline'"), "La CSP ne doit pas autoriser le code ou les styles inline.");
@@ -86,10 +96,21 @@ assert(!/\sstyle\s*=/i.test(indexHtml + appJs), "Style HTML inline détecté.");
 assert(!/\.style(?:\.|\[|\s*=)/.test(appJs + bootstrapJs), "Modification de style inline détectée.");
 assert(!/\b(?:eval|Function)\s*\(/.test(appJs + bootstrapJs + serviceWorker), "Exécution JavaScript dynamique interdite.");
 assert(!/document\.write\s*\(/.test(appJs + bootstrapJs), "document.write est interdit.");
+assert((appJs.match(/\.innerHTML\s*=/g) || []).length === 1, "Tout rendu HTML doit passer par l'unique garde Trusted Types.");
+assert(appJs.includes('createPolicy("counter-renderer"'), "La politique Trusted Types de rendu est absente.");
+assert(appJs.includes("value.length > 2_000_000"), "La taille des données locales non fiables doit être bornée avant JSON.parse.");
 assert(serviceWorker.includes('headers.set("X-Content-Type-Options", "nosniff")'), "Protection nosniff absente.");
 assert(serviceWorker.includes('headers.set("X-Frame-Options", "DENY")'), "Protection anti-iframe absente.");
 assert(serviceWorker.includes('headers.set("Permissions-Policy"'), "Permissions-Policy absente.");
+assert(serviceWorker.includes('headers.set("Cross-Origin-Embedder-Policy", "require-corp")'), "Isolation COEP absente.");
+assert(serviceWorker.includes('headers.set("Origin-Agent-Cluster", "?1")'), "Isolation Origin-Agent-Cluster absente.");
+assert(serviceWorker.includes("hasExpectedContentType"), "Validation MIME du Service Worker absente.");
 assert(serviceWorker.includes("key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME"), "Le nettoyage du cache n'est pas limité à l'application.");
+
+for (const [asset, content] of [["bootstrap.js", bootstrapJs], ["app.js", appJs], ["style.css", styleCss]]) {
+  const integrity = sha384Integrity(content);
+  assert(indexHtml.includes(`integrity="${integrity}"`), `Empreinte SRI absente ou invalide pour ${asset}.`);
+}
 
 const runtimeBundle = [indexHtml, bootstrapJs, appJs, styleCss, manifestText, serviceWorker, versionText].join("\n");
 assert(!/\bhttp:\/\//i.test(runtimeBundle), "Ressource HTTP non sécurisée détectée dans l'application.");
@@ -116,7 +137,7 @@ for (const absolutePath of await walk()) {
   }
 }
 
-for (const workflowPath of [".github/workflows/pages.yml", ".github/workflows/security.yml"]) {
+for (const workflowPath of [".github/workflows/pages.yml", ".github/workflows/security.yml", ".github/workflows/codeql.yml"]) {
   const workflow = await read(workflowPath);
   assert(!workflow.includes("pull_request_target"), `${workflowPath} ne doit pas utiliser pull_request_target.`);
   assert(!workflow.includes("write-all"), `${workflowPath} accorde des permissions excessives.`);

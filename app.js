@@ -5,7 +5,15 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "22";
+const APP_VERSION = window.__COUNTER_BUILD__ || "23";
+
+const trustedHTMLPolicy = window.trustedTypes?.createPolicy("counter-renderer", {
+  createHTML: markup => String(markup)
+});
+
+function setHTML(element, markup) {
+  element.innerHTML = trustedHTMLPolicy ? trustedHTMLPolicy.createHTML(markup) : markup;
+}
 
 const VALID_TARGETS = [0, 500, 1000];
 const MIN_PLAYERS = 2;
@@ -61,6 +69,7 @@ const els = {
 };
 
 function safeParse(value, fallback) {
+  if (typeof value !== "string" || value.length > 2_000_000) return fallback;
   try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
 }
 
@@ -262,10 +271,10 @@ function clearActiveGame() {
 
 function refreshKnownPlayers() {
   const stats = getStats();
-  els.knownPlayers.innerHTML = Object.keys(stats)
+  setHTML(els.knownPlayers, Object.keys(stats)
     .sort((a, b) => a.localeCompare(b, "fr"))
     .map(name => `<option value="${escapeHtml(name)}"></option>`)
-    .join("");
+    .join(""));
 }
 
 function refreshResumeCard() {
@@ -282,13 +291,13 @@ function refreshResumeCard() {
 
 function renderPlayerInputs() {
   const previous = [...els.playerInputs.querySelectorAll("input")].map(input => input.value);
-  els.playerInputs.innerHTML = "";
+  els.playerInputs.replaceChildren();
 
   for (let i = 0; i < state.playerCount; i++) {
     const suit = SUITS[i];
     const row = document.createElement("div");
     row.className = "player-name-row";
-    row.innerHTML = `
+    setHTML(row, `
       <div class="player-suit ${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</div>
       <input
         class="player-input"
@@ -299,7 +308,7 @@ function renderPlayerInputs() {
         placeholder="Nom du joueur ${i + 1}"
         value="${escapeHtml(previous[i] || "")}"
       />
-    `;
+    `);
     els.playerInputs.appendChild(row);
   }
 }
@@ -362,8 +371,8 @@ function renderDealerBanner() {
     const lastDealerIndex = Number(lastRound?.dealerIndex);
     if (Number.isInteger(lastDealerIndex) && state.players[lastDealerIndex]) {
       const lastDealerName = state.players[lastDealerIndex].name;
-      els.dealerBanner.innerHTML = `♠ Dernier donneur · manche ${state.rounds.length} : <strong>${escapeHtml(lastDealerName)}</strong>`;
-      els.roundDealerBadge.innerHTML = `♠ Dernière distribution : <strong>${escapeHtml(lastDealerName)}</strong>`;
+      setHTML(els.dealerBanner, `♠ Dernier donneur · manche ${state.rounds.length} : <strong>${escapeHtml(lastDealerName)}</strong>`);
+      setHTML(els.roundDealerBadge, `♠ Dernière distribution : <strong>${escapeHtml(lastDealerName)}</strong>`);
     } else {
       els.dealerBanner.textContent = "♠ Partie terminée.";
       els.roundDealerBadge.textContent = "♠ Aucune manche jouée";
@@ -373,13 +382,13 @@ function renderDealerBanner() {
 
   const dealerIndex = getCurrentDealerIndex();
   if (dealerIndex === null) {
-    els.dealerBanner.innerHTML = "♠ Choisis le donneur avant de saisir les points.";
+    els.dealerBanner.textContent = "♠ Choisis le donneur avant de saisir les points.";
     els.roundDealerBadge.textContent = "♠ Distribution : à choisir";
     return;
   }
   const dealerName = state.players[dealerIndex].name;
-  els.dealerBanner.innerHTML = `♠ Donneur de la manche ${state.rounds.length + 1} : <strong>${escapeHtml(dealerName)}</strong>`;
-  els.roundDealerBadge.innerHTML = `♠ Distribution : <strong>${escapeHtml(dealerName)}</strong>`;
+  setHTML(els.dealerBanner, `♠ Donneur de la manche ${state.rounds.length + 1} : <strong>${escapeHtml(dealerName)}</strong>`);
+  setHTML(els.roundDealerBadge, `♠ Distribution : <strong>${escapeHtml(dealerName)}</strong>`);
 }
 
 function requestDealerIfNeeded() {
@@ -394,7 +403,7 @@ function requestDealerIfNeeded() {
   els.dealerHint.textContent = state.playerCount === 2
     ? "Choisis le premier donneur. Ensuite, l'application alternera automatiquement entre les deux joueurs."
     : `Choisis le donneur pour les ${questionsRequired} premières manches. L'application apprendra ainsi le sens de rotation et annoncera les suivants.`;
-  els.dealerOptions.innerHTML = state.players.map((player, index) => {
+  setHTML(els.dealerOptions, state.players.map((player, index) => {
     const suit = SUITS[index];
     const alreadyChosen = state.dealerOrder.includes(index);
     return `
@@ -403,7 +412,7 @@ function requestDealerIfNeeded() {
         <span>${escapeHtml(player.name)}</span>
       </button>
     `;
-  }).join("");
+  }).join(""));
   els.dealerOptions.querySelectorAll("[data-dealer-index]").forEach(button => {
     bindReliableTap(button, () => selectDealer(Number(button.dataset.dealerIndex)));
   });
@@ -458,7 +467,7 @@ function renderGame({ deferDealerPrompt = false } = {}) {
   els.targetBadge.textContent = state.target > 0 ? `Objectif ${state.target}` : "Sans limite";
   document.getElementById("finishGameBtn").classList.remove("hidden");
   els.scoreBoard.dataset.count = String(state.playerCount);
-  els.scoreBoard.innerHTML = "";
+  els.scoreBoard.replaceChildren();
 
   state.players.forEach((player, index) => {
     const suit = SUITS[index];
@@ -468,7 +477,7 @@ function renderGame({ deferDealerPrompt = false } = {}) {
     const card = document.createElement("article");
     card.className = `player-score-card ${suit.red ? "red-card" : ""}`;
     card.dataset.suit = suit.symbol;
-    card.innerHTML = `
+    setHTML(card, `
       <div class="score-name">
         <span class="suit ${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
         <strong>${escapeHtml(player.name)}</strong>
@@ -476,7 +485,7 @@ function renderGame({ deferDealerPrompt = false } = {}) {
       <div class="score-total">${formatNumber(player.total)}</div>
       <div class="score-meta">${last === null ? "Aucun score" : `Dernière manche : ${signed(last)}`}</div>
       ${state.target > 0 ? `<progress class="progress-wrap" max="100" value="${Math.round(progress)}" aria-label="Progression vers l'objectif"></progress>` : ""}
-    `;
+    `);
     els.scoreBoard.appendChild(card);
   });
 
@@ -517,12 +526,12 @@ function renderLeaderBanner() {
 }
 
 function renderRoundInputs() {
-  els.roundInputs.innerHTML = "";
+  els.roundInputs.replaceChildren();
   state.players.forEach((player, index) => {
     const suit = SUITS[index];
     const row = document.createElement("div");
     row.className = "round-input-row";
-    row.innerHTML = `
+    setHTML(row, `
       <div class="round-player-name">
         <span class="${suit.red ? "red" : ""}" aria-hidden="true">${suit.symbol}</span>
         <span class="round-player-label">${escapeHtml(player.name)}</span>
@@ -543,7 +552,7 @@ function renderRoundInputs() {
       <div class="score-field">
         <span class="score-unit">pts</span>
       </div>
-    `;
+    `);
     row.querySelector(".score-field").prepend(row.querySelector(".round-score-input"));
     els.roundInputs.appendChild(row);
   });
@@ -791,13 +800,13 @@ function renderWinnerPodium() {
   const ranked = state.players
     .map((player, index) => ({ ...player, index }))
     .sort((a, b) => b.total - a.total);
-  document.getElementById("winnerPodium").innerHTML = ranked.map((player, place) => `
+  setHTML(document.getElementById("winnerPodium"), ranked.map((player, place) => `
     <div class="podium-row">
       <span class="podium-place">${place + 1}</span>
       <span>${escapeHtml(player.name)}</span>
       <span class="podium-score">${formatNumber(player.total)} pts</span>
     </div>
-  `).join("");
+  `).join(""));
 }
 
 function setGameReadOnly(readOnly) {
@@ -926,16 +935,16 @@ function renderStats() {
 
   const totalPlayers = entries.length;
   const totalGames = entries.reduce((max, entry) => Math.max(max, entry.games), 0);
-  document.getElementById("statsSummary").innerHTML = `
+  setHTML(document.getElementById("statsSummary"), `
     <div class="stat-box"><strong>${totalPlayers}</strong><span>joueur${totalPlayers > 1 ? "s" : ""} enregistré${totalPlayers > 1 ? "s" : ""}</span></div>
     <div class="stat-box"><strong>${getRecentGames().length || totalGames}</strong><span>partie${(getRecentGames().length || totalGames) > 1 ? "s" : ""} mémorisée${(getRecentGames().length || totalGames) > 1 ? "s" : ""}</span></div>
-  `;
+  `);
 
   const content = document.getElementById("statsContent");
   if (!entries.length) {
-    content.innerHTML = `<div class="empty-state">Aucune partie terminée pour le moment.</div>`;
+    setHTML(content, `<div class="empty-state">Aucune partie terminée pour le moment.</div>`);
   } else {
-    content.innerHTML = `
+    setHTML(content, `
       <div class="table-scroll">
         <table class="stats-table">
           <thead><tr><th>Joueur</th><th>Parties</th><th>Victoires</th><th>Taux</th></tr></thead>
@@ -950,12 +959,12 @@ function renderStats() {
           </tbody>
         </table>
       </div>
-    `;
+    `);
   }
 
   const games = getRecentGames().slice(0, 5);
   const recent = document.getElementById("recentGames");
-  recent.innerHTML = games.length ? `
+  setHTML(recent, games.length ? `
     <h3 class="recent-title">Dernières parties</h3>
     <div class="recent-list">
       ${games.map(game => `
@@ -965,17 +974,17 @@ function renderStats() {
         </div>
       `).join("")}
     </div>
-  ` : "";
+  ` : "");
 }
 
 function renderHistory() {
   const content = document.getElementById("historyContent");
   if (!state.rounds.length) {
-    content.innerHTML = `<div class="empty-state">Aucune manche enregistrée.</div>`;
+    setHTML(content, `<div class="empty-state">Aucune manche enregistrée.</div>`);
     return;
   }
 
-  content.innerHTML = `
+  setHTML(content, `
     <div class="table-scroll">
       <table class="history-table">
         <thead>
@@ -993,7 +1002,7 @@ function renderHistory() {
         </tbody>
       </table>
     </div>
-  `;
+  `);
 }
 
 function resetStats() {

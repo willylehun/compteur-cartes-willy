@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; media-src 'none'; block-all-mixed-content" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self'; font-src 'none'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; child-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; form-action 'none'; media-src 'none'; trusted-types counter-renderer; require-trusted-types-for 'script'; block-all-mixed-content" />
   <meta name="referrer" content="no-referrer" />
   <meta name="theme-color" content="#103b2b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Counter By Willy" />
   <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
   <title>Counter By Willy</title>
-  <script src="bootstrap.js?v=22"></script>
-  <link rel="manifest" href="manifest.json?v=22" />
+  <script src="bootstrap.js?v=23" integrity="sha384-vlGotcfj/ChSi0xMwKlN5PzK3a8nGOcfNa/dRSjyO4UoxM7xGLs1hHAydo/K6PNx" crossorigin="anonymous"></script>
+  <link rel="manifest" href="manifest.json?v=23" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=22" />
+  <link rel="stylesheet" href="style.css?v=23" integrity="sha384-2B7OkoPBlNWXRqpQUKUdhYTeDTu1qd43DRY1ogOEB6ou7pfj1PxHMRooN8Nwnk5R" crossorigin="anonymous" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -157,7 +157,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span> <small>v22</small>
+      <span>♠</span> by Willy <span>♥</span> <small>v23</small>
     </footer>
   </main>
 
@@ -218,6 +218,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=22"></script>
+  <script src="app.js?v=23" integrity="sha384-dBNJGicFByCzVxPqIA5qIjfH7Mb9wdAchzrE9lm0xxYcJQzl+QgPkaXtixiaLU4Z" crossorigin="anonymous"></script>
 </body>
 </html>

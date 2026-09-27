@@ -1,23 +1,34 @@
 "use strict";
 
-const APP_VERSION = "22";
+const APP_VERSION = "23";
 const CACHE_PREFIX = "willy-card-counter-";
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 const APP_SCOPE = new URL("./", self.registration.scope);
 const INDEX_URL = new URL("./index.html", APP_SCOPE).href;
 const ASSETS = [
   "./index.html",
-  "./bootstrap.js?v=22",
-  "./style.css?v=22",
-  "./app.js?v=22",
-  "./manifest.json?v=22",
+  "./bootstrap.js?v=23",
+  "./style.css?v=23",
+  "./app.js?v=23",
+  "./manifest.json?v=23",
   "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
 const CACHEABLE_PATHS = new Set(ASSETS.map(asset => new URL(asset, APP_SCOPE).pathname));
-const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; media-src 'none'; block-all-mixed-content";
+const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self'; font-src 'none'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; child-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; media-src 'none'; trusted-types counter-renderer; require-trusted-types-for 'script'; block-all-mixed-content";
+const EXPECTED_CONTENT_TYPES = new Map([
+  [new URL("./index.html", APP_SCOPE).pathname, ["text/html"]],
+  [new URL("./bootstrap.js", APP_SCOPE).pathname, ["text/javascript", "application/javascript"]],
+  [new URL("./app.js", APP_SCOPE).pathname, ["text/javascript", "application/javascript"]],
+  [new URL("./style.css", APP_SCOPE).pathname, ["text/css"]],
+  [new URL("./manifest.json", APP_SCOPE).pathname, ["application/manifest+json", "application/json"]],
+  [new URL("./version.json", APP_SCOPE).pathname, ["application/json"]],
+  [new URL("./icons/apple-touch-icon.png", APP_SCOPE).pathname, ["image/png"]],
+  [new URL("./icons/icon-192.png", APP_SCOPE).pathname, ["image/png"]],
+  [new URL("./icons/icon-512.png", APP_SCOPE).pathname, ["image/png"]]
+]);
 
 function canonicalCacheKey(url, isNavigation = false) {
   if (isNavigation) return INDEX_URL;
@@ -27,11 +38,21 @@ function canonicalCacheKey(url, isNavigation = false) {
   return canonicalUrl.href;
 }
 
+function hasExpectedContentType(url, response, isNavigation = false) {
+  const contentType = (response.headers.get("Content-Type") || "").toLowerCase();
+  const expected = isNavigation
+    ? ["text/html"]
+    : EXPECTED_CONTENT_TYPES.get(new URL(url).pathname);
+  return Array.isArray(expected) && expected.some(type => contentType.startsWith(type));
+}
+
 function addSecurityHeaders(response) {
   const headers = new Headers(response.headers);
   headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  headers.set("Cross-Origin-Embedder-Policy", "require-corp");
   headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  headers.set("Origin-Agent-Cluster", "?1");
   headers.set("Permissions-Policy", "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), web-share=(), xr-spatial-tracking=(), bluetooth=(), browsing-topics=()");
   headers.set("Referrer-Policy", "no-referrer");
   headers.set("X-Content-Type-Options", "nosniff");
@@ -45,8 +66,29 @@ function addSecurityHeaders(response) {
   });
 }
 
+async function precacheAssets() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(ASSETS.map(async asset => {
+    const request = new Request(new URL(asset, APP_SCOPE), {
+      cache: "reload",
+      credentials: "same-origin"
+    });
+    const response = await fetch(request);
+    const responseUrl = new URL(response.url || request.url);
+    if (
+      !response.ok
+      || response.type !== "basic"
+      || responseUrl.origin !== APP_SCOPE.origin
+      || !hasExpectedContentType(request.url, response)
+    ) {
+      throw new Error(`Ressource de pré-cache refusée : ${responseUrl.pathname}`);
+    }
+    await cache.put(canonicalCacheKey(request.url), addSecurityHeaders(response));
+  }));
+}
+
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  event.waitUntil(precacheAssets());
   self.skipWaiting();
 });
 
@@ -90,7 +132,12 @@ self.addEventListener("fetch", event => {
         credentials: "same-origin"
       });
       const responseUrl = new URL(networkResponse.url || request.url);
-      if (!networkResponse.ok || networkResponse.type !== "basic" || responseUrl.origin !== APP_SCOPE.origin) {
+      if (
+        !networkResponse.ok
+        || networkResponse.type !== "basic"
+        || responseUrl.origin !== APP_SCOPE.origin
+        || !hasExpectedContentType(request.url, networkResponse, isNavigation)
+      ) {
         throw new Error("Réponse réseau non fiable");
       }
 

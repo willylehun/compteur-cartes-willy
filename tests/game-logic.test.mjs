@@ -135,6 +135,29 @@ test("les noms affichés dans du HTML sont échappés", () => {
   assert.match(escaped, /&lt;img/);
 });
 
+test("les rendus HTML passent par la politique Trusted Types lorsqu'elle existe", () => {
+  const sandbox = evaluateSlice("const APP_VERSION", "const VALID_TARGETS", {
+    window: {
+      __COUNTER_BUILD__: "23",
+      trustedTypes: {
+        createPolicy(name, rules) {
+          assert.equal(name, "counter-renderer");
+          return { createHTML: markup => ({ trusted: rules.createHTML(markup) }) };
+        }
+      }
+    }
+  });
+  const element = { innerHTML: null };
+  sandbox.setHTML(element, "<strong>contenu contrôlé</strong>");
+  assert.deepEqual(element.innerHTML, { trusted: "<strong>contenu contrôlé</strong>" });
+});
+
+test("les chaînes locales excessives sont refusées avant le parsing JSON", () => {
+  const sandbox = evaluateSlice("function safeParse", "function safeStorageGet");
+  assert.equal(sandbox.safeParse('{"ok":true}', {}).ok, true);
+  assert.equal(sandbox.safeParse("x".repeat(2_000_001), null), null);
+});
+
 test("la compatibilité mobile ne dépend pas de Array.prototype.at", () => {
   assert.equal(source.includes(".at("), false);
 });
