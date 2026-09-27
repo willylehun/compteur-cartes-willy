@@ -45,7 +45,10 @@ jobs:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Lint and build release bundle
         working-directory: android
-        run: gradle --no-daemon --stacktrace :app:lintRelease :app:bundleRelease
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --stacktrace :app:lintRelease :app:bundleRelease
+          find app/build -name "lint-results-release.txt" -type f -print -exec cat {} \;
       - name: Upload unsigned validation bundle
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
