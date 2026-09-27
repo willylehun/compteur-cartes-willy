@@ -173,13 +173,15 @@ const assetlinksGenerator = await read("scripts/render-assetlinks.mjs");
 const playListing = await read("play-store/listing-fr.md");
 
 assert(androidBuild.includes('applicationId "fr.bywilly.counter"'), "Identifiant Android inattendu.");
-assert(androidBuild.includes("compileSdk 36") && androidBuild.includes("targetSdk 36"), "Le projet Android doit cibler l'API 36.");
+assert(androidBuild.includes("compileSdk 37") && androidBuild.includes("targetSdk 37"), "Le projet Android doit cibler l'API 37.");
+assert(androidBuild.includes("warningsAsErrors true"), "Android Lint doit refuser tout avertissement de publication.");
 assert(androidBuild.includes('androidbrowserhelper:2.7.3'), "Version Android Browser Helper inattendue.");
 assert(!androidBuild.includes("signingConfigs") && !androidBuild.includes("storePassword"), "La signature Android ne doit pas être configurée dans le dépôt.");
 const androidPermissions = [...androidManifest.matchAll(/<uses-permission\s+android:name="([^"]+)"/g)].map(match => match[1]);
 assert(androidPermissions.length === 1 && androidPermissions[0] === "android.permission.INTERNET", "Android ne doit demander que la permission Internet.");
 assert(androidManifest.includes('android:usesCleartextTraffic="false"'), "Le trafic Android en clair doit être bloqué.");
 assert(androidManifest.includes('android:allowBackup="false"'), "Les sauvegardes Android doivent être désactivées.");
+assert(androidManifest.includes('android:dataExtractionRules="@xml/data_extraction_rules"'), "Les règles modernes d'extraction Android sont absentes.");
 assert(networkSecurity.includes('cleartextTrafficPermitted="false"'), "La configuration réseau Android doit refuser HTTP.");
 assert(androidStrings.includes(`?app=v${version}`), "La TWA ne pointe pas vers la version PWA publiée.");
 assert(assetlinksGenerator.includes('const PACKAGE_NAME = "fr.bywilly.counter"'), "Le générateur Asset Links utilise un paquet inattendu.");

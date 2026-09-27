@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace "fr.bywilly.counter"
-    compileSdk 36
+    compileSdk 37
 
     defaultConfig {
         applicationId "fr.bywilly.counter"
         minSdk 23
-        targetSdk 36
+        targetSdk 37
         versionCode 1
         versionName "1.0.0"
 
@@ -41,7 +41,7 @@ android {
         abortOnError true
         checkDependencies true
         checkReleaseBuilds true
-        warningsAsErrors false
+        warningsAsErrors true
     }
 }
 

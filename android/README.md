@@ -5,7 +5,7 @@ Ce module transforme la PWA publiée en Trusted Web Activity (TWA). Il ne dupliq
 ## Paramètres préparés
 
 - identifiant Android : `fr.bywilly.counter` ;
-- `compileSdk` et `targetSdk` : API 36 ;
+- `compileSdk` et `targetSdk` : API 37 (au-dessus du minimum Play API 36) ;
 - Android Browser Helper : 2.7.3 ;
 - URL : `https://willylehun.github.io/compteur-cartes-willy/?app=v24` ;
 - permission unique : accès Internet ;
@@ -15,7 +15,7 @@ L'identifiant Android est définitif après le premier envoi dans Play Console. 
 
 ## Construction de contrôle
 
-Le workflow `Android release validation` construit automatiquement un App Bundle de contrôle non signé. Localement, avec JDK 17, Android SDK 36 et Gradle 9.4.1 :
+Le workflow `Android release validation` construit automatiquement un App Bundle de contrôle non signé. Localement, avec JDK 17, Android SDK 37 et Gradle 9.4.1 :
 
 ```bash
 gradle --no-daemon :app:lintRelease :app:bundleRelease

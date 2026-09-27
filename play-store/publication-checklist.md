@@ -4,7 +4,7 @@
 
 - [x] PWA HTTPS, installable et utilisable hors ligne
 - [x] page de confidentialité publique
-- [x] projet Android TWA ciblant l'API 36
+- [x] projet Android TWA ciblant l'API 37
 - [x] nom de paquet préparé : `fr.bywilly.counter`
 - [x] permission Internet uniquement et trafic HTTP en clair bloqué
 - [x] icône adaptative Android
