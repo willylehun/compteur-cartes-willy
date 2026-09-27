@@ -38,6 +38,9 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Historique des 20 dernières parties terminées
 - PWA installable sur Android et iPhone
 - Fonctionnement hors ligne après la première ouverture
+- CSP restrictive et protections PWA contre les contenus externes, l'intégration en iframe et les permissions navigateur inutiles
+- Validation défensive des données provenant du stockage local
+- Aucune API, télémétrie, ressource CDN ou dépendance JavaScript tierce
 - Design thème table de cartes et signature « by Willy »
 
 ## Test local
@@ -46,5 +49,16 @@ python -m http.server 8000
 ```
 Puis ouvrir http://localhost:8000
 
+## Vérifications locales
+```bash
+node --check bootstrap.js
+node --check app.js
+node --check sw.js
+node scripts/validate-release.mjs
+node --test tests/game-logic.test.mjs
+```
+
+La politique de confidentialité actuelle est décrite dans `PRIVACY.md` et les signalements de vulnérabilité dans `SECURITY.md`.
+
 ## GitHub Pages
-Le dépôt contient `.github/workflows/pages.yml`, basé sur le workflow GitHub Pages pour contenu statique. Une fois Pages configuré avec GitHub Actions, chaque push sur `main` redéploie l'application.
+Le dépôt contient `.github/workflows/pages.yml`. Chaque push sur `main` valide la syntaxe, les contrôles de sécurité et la logique de jeu, puis publie uniquement une liste blanche de fichiers nécessaires à l'application. Les actions tierces sont épinglées par SHA et les permissions sont séparées entre validation et déploiement.

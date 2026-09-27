@@ -482,8 +482,21 @@ body.modal-open { overflow: hidden; }
   color: var(--felt);
 }
 .score-meta { margin-top: 6px; color: var(--muted); font-size: 10px; }
-.progress-wrap { height: 6px; margin-top: 11px; overflow: hidden; border-radius: 999px; background: #e7e8e2; }
-.progress-bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--felt-3), var(--gold)); transition: width .3s ease; }
+.progress-wrap {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: 11px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #e7e8e2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.progress-wrap::-webkit-progress-bar { border-radius: 999px; background: #e7e8e2; }
+.progress-wrap::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, var(--felt-3), var(--gold)); }
+.progress-wrap::-moz-progress-bar { border-radius: 999px; background: linear-gradient(90deg, var(--felt-3), var(--gold)); }
 
 .round-panel { margin-top: 13px; }
 .round-panel-head { align-items: center; margin-bottom: 7px; }
@@ -575,6 +588,8 @@ body.modal-open { overflow: hidden; }
 .dealer-banner strong { margin-left: 5px; color: white; }
 
 .game-actions { display: grid; gap: 9px; margin-top: 13px; }
+.game-actions button:disabled,
+#validateRoundBtn:disabled { opacity: .48; cursor: not-allowed; }
 
 .signature {
   padding: 28px 0 4px;
@@ -694,6 +709,37 @@ body.modal-open { overflow: hidden; }
   opacity: 0;
   animation: confetti-fall var(--duration) var(--delay) cubic-bezier(.18,.72,.28,1) forwards;
 }
+.confetti-color-0 { background: #d7ad55; }
+.confetti-color-1 { background: #f2d88f; }
+.confetti-color-2 { background: #af3140; }
+.confetti-color-3 { background: #1a6748; }
+.confetti-color-4 { background: #fff9eb; }
+.confetti-size-0 { --size: 6px; }
+.confetti-size-1 { --size: 8px; }
+.confetti-size-2 { --size: 10px; }
+.confetti-size-3 { --size: 12px; }
+.confetti-speed-0 { --duration: 2.6s; }
+.confetti-speed-1 { --duration: 3.1s; }
+.confetti-speed-2 { --duration: 3.6s; }
+.confetti-speed-3 { --duration: 4.1s; }
+.confetti-delay-0 { --delay: 0s; }
+.confetti-delay-1 { --delay: .12s; }
+.confetti-delay-2 { --delay: .24s; }
+.confetti-delay-3 { --delay: .36s; }
+.confetti-delay-4 { --delay: .48s; }
+.confetti-delay-5 { --delay: .6s; }
+.confetti-track-0 { left: 3%; --drift: 72px; --spin: 720deg; }
+.confetti-track-1 { left: 11%; --drift: -54px; --spin: 910deg; }
+.confetti-track-2 { left: 19%; --drift: 88px; --spin: 580deg; }
+.confetti-track-3 { left: 28%; --drift: -76px; --spin: 1030deg; }
+.confetti-track-4 { left: 37%; --drift: 45px; --spin: 840deg; }
+.confetti-track-5 { left: 46%; --drift: -92px; --spin: 640deg; }
+.confetti-track-6 { left: 55%; --drift: 81px; --spin: 1080deg; }
+.confetti-track-7 { left: 64%; --drift: -47px; --spin: 760deg; }
+.confetti-track-8 { left: 73%; --drift: 64px; --spin: 940deg; }
+.confetti-track-9 { left: 82%; --drift: -83px; --spin: 610deg; }
+.confetti-track-10 { left: 90%; --drift: 51px; --spin: 1000deg; }
+.confetti-track-11 { left: 97%; --drift: -69px; --spin: 820deg; }
 
 @keyframes confetti-fall {
   0% { opacity: 1; transform: translate3d(0, -5vh, 0) rotate(0deg); }

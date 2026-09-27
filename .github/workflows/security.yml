@@ -1,0 +1,38 @@
+name: Security checks
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "security-${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Static audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without stored credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: false
+      - name: Validate syntax, security and game logic
+        run: |
+          set -euo pipefail
+          node --check bootstrap.js
+          node --check app.js
+          node --check sw.js
+          node --check scripts/validate-release.mjs
+          node --check tests/game-logic.test.mjs
+          node scripts/validate-release.mjs
+          node --test tests/game-logic.test.mjs

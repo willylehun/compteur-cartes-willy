@@ -1,0 +1,26 @@
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+secrets*.json
+
+# Dépendances, caches et sorties locales
+node_modules/
+_site/
+coverage/
+.cache/
+*.log
+
+# Fichiers système et éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

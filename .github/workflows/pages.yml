@@ -1,34 +1,69 @@
-name: Deploy static content to Pages
+name: Deploy secured static content to Pages
 
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
-  group: "pages"
+  group: "pages-${{ github.ref }}"
   cancel-in-progress: false
 
 jobs:
+  build:
+    name: Validate and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: false
+      - name: Validate JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check bootstrap.js
+          node --check app.js
+          node --check sw.js
+          node --check scripts/validate-release.mjs
+          node --check tests/game-logic.test.mjs
+      - name: Run security and game tests
+        run: |
+          set -euo pipefail
+          node scripts/validate-release.mjs
+          node --test tests/game-logic.test.mjs
+      - name: Prepare deployment allowlist
+        run: |
+          set -euo pipefail
+          mkdir -p _site/icons
+          install -m 0644 .nojekyll index.html bootstrap.js app.js style.css manifest.json sw.js version.json _site/
+          install -m 0644 icons/apple-touch-icon.png icons/icon-192.png icons/icon-512.png _site/icons/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: "_site"
+          retention-days: 1
+
   deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: "."
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

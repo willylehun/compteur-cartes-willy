@@ -5,9 +5,14 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "21";
+const APP_VERSION = window.__COUNTER_BUILD__ || "22";
 
 const VALID_TARGETS = [0, 500, 1000];
+const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 4;
+const MAX_PLAYER_NAME_LENGTH = 24;
+const MAX_STORED_PLAYERS = 200;
+const MAX_STORED_ROUNDS = 10000;
 
 const SUITS = [
   { symbol: "♠", red: false },
@@ -82,17 +87,114 @@ function normalizeTarget(value) {
   return VALID_TARGETS.includes(target) ? target : 500;
 }
 
+function toSafeInteger(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : fallback;
+}
+
+function toNonNegativeInteger(value, fallback = 0) {
+  const number = toSafeInteger(value, fallback);
+  return number >= 0 ? number : fallback;
+}
+
+function normalizeStats(value) {
+  const cleanStats = Object.create(null);
+  if (!value || typeof value !== "object" || Array.isArray(value)) return cleanStats;
+
+  Object.entries(value).slice(0, MAX_STORED_PLAYERS).forEach(([rawName, rawStats]) => {
+    const name = normalizeName(rawName);
+    if (!name || !rawStats || typeof rawStats !== "object" || Array.isArray(rawStats)) return;
+    const games = toNonNegativeInteger(rawStats.games);
+    const wins = Math.min(games, toNonNegativeInteger(rawStats.wins));
+    cleanStats[name] = { games, wins };
+  });
+  return cleanStats;
+}
+
+function normalizeRecentGames(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 20).map(game => {
+    if (!game || typeof game !== "object" || Array.isArray(game)) return null;
+    const winner = normalizeDisplayText(game.winner, (MAX_PLAYER_NAME_LENGTH * MAX_PLAYERS) + 12);
+    const players = Array.isArray(game.players)
+      ? game.players.slice(0, MAX_PLAYERS).map(player => ({
+        name: normalizeName(player?.name),
+        total: toSafeInteger(player?.total)
+      })).filter(player => player.name)
+      : [];
+    if (!winner || players.length < MIN_PLAYERS) return null;
+    return {
+      winner,
+      winnerScore: toSafeInteger(game.winnerScore),
+      players,
+      target: normalizeTarget(game.target),
+      rounds: toNonNegativeInteger(game.rounds),
+      finishedAt: toNonNegativeInteger(game.finishedAt, Date.now())
+    };
+  }).filter(Boolean);
+}
+
+function normalizeStoredGame(saved) {
+  if (!saved || typeof saved !== "object" || Array.isArray(saved) || !Array.isArray(saved.players)) return null;
+  if (saved.players.length < MIN_PLAYERS || saved.players.length > MAX_PLAYERS) return null;
+  if (!Array.isArray(saved.rounds) || saved.rounds.length > MAX_STORED_ROUNDS) return null;
+
+  const players = saved.players.map(player => ({ name: normalizeName(player?.name), total: 0 }));
+  if (players.some(player => !player.name)) return null;
+  const loweredNames = players.map(player => player.name.toLocaleLowerCase("fr"));
+  if (new Set(loweredNames).size !== players.length) return null;
+
+  const playerCount = players.length;
+  const rounds = saved.rounds.map((round, roundIndex) => {
+    const rawScores = Array.isArray(round?.scores) ? round.scores : [];
+    const dealerIndex = toSafeInteger(round?.dealerIndex, -1);
+    return {
+      roundNumber: roundIndex + 1,
+      scores: Array.from({ length: playerCount }, (_, playerIndex) => toSafeInteger(rawScores[playerIndex])),
+      dealerIndex: dealerIndex >= 0 && dealerIndex < playerCount ? dealerIndex : null,
+      at: toNonNegativeInteger(round?.at, Date.now())
+    };
+  });
+  const totalsAreSafe = players.every((_, playerIndex) => {
+    const total = rounds.reduce((sum, round) => sum + round.scores[playerIndex], 0);
+    return Number.isSafeInteger(total);
+  });
+  if (!totalsAreSafe) return null;
+
+  const dealerOrder = (Array.isArray(saved.dealerOrder) ? saved.dealerOrder : [])
+    .map(index => toSafeInteger(index, -1))
+    .filter((index, position, values) => (
+      index >= 0
+      && index < playerCount
+      && values.indexOf(index) === position
+    ))
+    .slice(0, playerCount);
+  const rawWinnerIndex = toSafeInteger(saved.winnerIndex, -1);
+
+  return {
+    playerCount,
+    target: normalizeTarget(saved.target),
+    players,
+    rounds,
+    dealerOrder,
+    dealerSetupStartRound: Math.min(rounds.length, toNonNegativeInteger(saved.dealerSetupStartRound)),
+    gameFinished: saved.gameFinished === true,
+    winnerIndex: rawWinnerIndex >= 0 && rawWinnerIndex < playerCount ? rawWinnerIndex : null,
+    savedAt: toNonNegativeInteger(saved.savedAt, Date.now())
+  };
+}
+
 function getStats() {
-  return safeParse(safeStorageGet(STORAGE_KEYS.stats), {});
+  return normalizeStats(safeParse(safeStorageGet(STORAGE_KEYS.stats), {}));
 }
 
 function saveStats(stats) {
-  safeStorageSet(STORAGE_KEYS.stats, JSON.stringify(stats));
+  safeStorageSet(STORAGE_KEYS.stats, JSON.stringify(normalizeStats(stats)));
   refreshKnownPlayers();
 }
 
 function getRecentGames() {
-  return safeParse(safeStorageGet(STORAGE_KEYS.recentGames), []);
+  return normalizeRecentGames(safeParse(safeStorageGet(STORAGE_KEYS.recentGames), []));
 }
 
 function saveRecentGame(winner) {
@@ -109,19 +211,20 @@ function saveRecentGame(winner) {
 }
 
 function getSavedGame() {
-  const current = safeParse(safeStorageGet(STORAGE_KEYS.activeGame), null);
-  if (current?.players?.length) return current;
+  const current = normalizeStoredGame(safeParse(safeStorageGet(STORAGE_KEYS.activeGame), null));
+  if (current) return current;
 
   const legacy = safeParse(safeStorageGet(STORAGE_KEYS.legacyActiveGame), null);
-  if (!legacy?.players?.length) return null;
+  if (!legacy?.players?.length || !Array.isArray(legacy.history)) return null;
 
-  const rounds = (legacy.history || []).map(entry => {
+  const rounds = legacy.history.map(entry => {
     const scores = Array(legacy.players.length).fill(0);
-    scores[entry.playerIndex] = Number(entry.points || 0);
+    const playerIndex = toSafeInteger(entry?.playerIndex, -1);
+    if (playerIndex >= 0 && playerIndex < scores.length) scores[playerIndex] = toSafeInteger(entry?.points);
     return { scores, at: entry.at || Date.now() };
   });
 
-  return {
+  return normalizeStoredGame({
     playerCount: legacy.playerCount || legacy.players.length,
     target: Number(legacy.target || 0),
     players: legacy.players,
@@ -131,7 +234,7 @@ function getSavedGame() {
     gameFinished: Boolean(legacy.gameFinished),
     winnerIndex: null,
     savedAt: legacy.savedAt || Date.now()
-  };
+  });
 }
 
 function saveActiveGame() {
@@ -372,7 +475,7 @@ function renderGame({ deferDealerPrompt = false } = {}) {
       </div>
       <div class="score-total">${formatNumber(player.total)}</div>
       <div class="score-meta">${last === null ? "Aucun score" : `Dernière manche : ${signed(last)}`}</div>
-      ${state.target > 0 ? `<div class="progress-wrap"><div class="progress-bar" style="width:${progress}%"></div></div>` : ""}
+      ${state.target > 0 ? `<progress class="progress-wrap" max="100" value="${Math.round(progress)}" aria-label="Progression vers l'objectif"></progress>` : ""}
     `;
     els.scoreBoard.appendChild(card);
   });
@@ -493,8 +596,18 @@ function validateRound() {
     const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
     const scores = inputs.map(input => Number(input.value.trim() === "" ? 0 : input.value));
 
-    if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
+    if (inputs.length !== state.players.length) {
+      showToast("Les champs de score sont incomplets. Recharge l'application.");
+      return;
+    }
+
+    if (scores.some(score => !Number.isSafeInteger(score))) {
       showToast("Utilise uniquement des nombres entiers.");
+      return;
+    }
+
+    if (scores.some((score, index) => !Number.isSafeInteger(state.players[index].total + score))) {
+      showToast("Ce score dépasse la valeur maximale autorisée.");
       return;
     }
 
@@ -643,18 +756,17 @@ function launchConfetti() {
   layer.replaceChildren();
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-  const colors = ["#d7ad55", "#f2d88f", "#af3140", "#1a6748", "#fff9eb"];
   const fragment = document.createDocumentFragment();
   for (let index = 0; index < 72; index++) {
     const piece = document.createElement("span");
-    piece.className = "confetti-piece";
-    piece.style.left = `${Math.random() * 100}%`;
-    piece.style.background = colors[index % colors.length];
-    piece.style.setProperty("--delay", `${Math.random() * 0.75}s`);
-    piece.style.setProperty("--duration", `${2.5 + Math.random() * 1.7}s`);
-    piece.style.setProperty("--drift", `${-90 + Math.random() * 180}px`);
-    piece.style.setProperty("--spin", `${360 + Math.random() * 720}deg`);
-    piece.style.setProperty("--size", `${6 + Math.random() * 7}px`);
+    piece.className = [
+      "confetti-piece",
+      `confetti-color-${index % 5}`,
+      `confetti-track-${index % 12}`,
+      `confetti-size-${index % 4}`,
+      `confetti-speed-${index % 4}`,
+      `confetti-delay-${index % 6}`
+    ].join(" ");
     fragment.appendChild(piece);
   }
   layer.appendChild(fragment);
@@ -693,9 +805,6 @@ function setGameReadOnly(readOnly) {
   document.getElementById("undoBtn").disabled = readOnly;
   document.getElementById("finishGameBtn").disabled = readOnly;
   els.roundInputs.querySelectorAll("input,button").forEach(control => { control.disabled = readOnly; });
-  document.querySelectorAll("#validateRoundBtn, #undoBtn, #finishGameBtn").forEach(button => {
-    button.style.opacity = readOnly ? ".48" : "1";
-  });
 }
 
 function startGame() {
@@ -748,18 +857,23 @@ function resumeGame() {
 }
 
 function normalizeRounds(rounds) {
-  return (Array.isArray(rounds) ? rounds : []).map((round, roundIndex) => {
+  const safeRounds = Array.isArray(rounds) && rounds.length <= MAX_STORED_ROUNDS ? rounds : [];
+  return safeRounds.map((round, roundIndex) => {
     const dealerIndex = round?.dealerIndex;
     return {
       roundNumber: roundIndex + 1,
       scores: Array.from({ length: state.playerCount }, (_, playerIndex) => {
         const score = Number(round?.scores?.[playerIndex] ?? 0);
-        return Number.isFinite(score) && Number.isInteger(score) ? score : 0;
+        return Number.isSafeInteger(score) ? score : 0;
       }),
-      dealerIndex: dealerIndex !== null && dealerIndex !== undefined && Number.isInteger(Number(dealerIndex))
+      dealerIndex: dealerIndex !== null
+        && dealerIndex !== undefined
+        && Number.isSafeInteger(Number(dealerIndex))
+        && Number(dealerIndex) >= 0
+        && Number(dealerIndex) < state.playerCount
         ? Number(dealerIndex)
         : null,
-      at: Number(round?.at || Date.now())
+      at: toNonNegativeInteger(round?.at, Date.now())
     };
   });
 }
@@ -892,19 +1006,32 @@ function resetStats() {
 }
 
 function normalizeName(value) {
-  return value.trim().replace(/\s+/g, " ").slice(0, 24);
+  return normalizeDisplayText(value, MAX_PLAYER_NAME_LENGTH);
+}
+
+function normalizeDisplayText(value, maxLength) {
+  const text = String(value ?? "");
+  const normalized = typeof text.normalize === "function" ? text.normalize("NFKC") : text;
+  return normalized
+    .replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, Math.max(0, toSafeInteger(maxLength)));
 }
 
 function formatNumber(value) {
-  return Number(value || 0).toLocaleString("fr-FR");
+  const number = Number(value);
+  return (Number.isFinite(number) ? number : 0).toLocaleString("fr-FR");
 }
 
 function signed(value) {
-  return `${value > 0 ? "+" : ""}${formatNumber(value)}`;
+  const number = Number.isFinite(Number(value)) ? Number(value) : 0;
+  return `${number > 0 ? "+" : ""}${formatNumber(number)}`;
 }
 
 function formatDate(timestamp) {
-  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(new Date(timestamp));
+  const date = new Date(toNonNegativeInteger(timestamp, Date.now()));
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date);
 }
 
 function escapeHtml(value) {
@@ -995,14 +1122,16 @@ async function checkPublishedVersion() {
   try {
     const response = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
     const published = await response.json();
-    if (String(published.version) === APP_VERSION) return;
+    const publishedVersion = String(published.version ?? "");
+    if (!/^\d{1,6}$/.test(publishedVersion) || publishedVersion === APP_VERSION) return;
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key)));
     }
     const registration = await navigator.serviceWorker?.getRegistration();
     await registration?.update();
-    window.location.replace(`./?app=v${published.version}&updated=1`);
+    const updateUrl = new URL(`./?app=v${publishedVersion}&updated=1`, window.location.href);
+    if (updateUrl.origin === window.location.origin) window.location.replace(updateUrl.href);
   } catch {}
 }
 

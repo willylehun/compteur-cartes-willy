@@ -3,30 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; media-src 'none'; block-all-mixed-content" />
+  <meta name="referrer" content="no-referrer" />
   <meta name="theme-color" content="#103b2b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Counter By Willy" />
   <meta name="description" content="Compteur de points pour jeux de cartes, de 2 à 4 joueurs." />
   <title>Counter By Willy</title>
-  <script>
-    (() => {
-      const build = "21";
-      window.__COUNTER_BUILD__ = build;
-      try {
-        const previousBuild = localStorage.getItem("willy-card-build");
-        localStorage.setItem("willy-card-build", build);
-        if (previousBuild !== build && "caches" in window) {
-          caches.keys().then(keys => Promise.all(
-            keys.filter(key => key.startsWith("willy-card-counter-")).map(key => caches.delete(key))
-          ));
-        }
-      } catch {}
-    })();
-  </script>
-  <link rel="manifest" href="manifest.json?v=21" />
+  <script src="bootstrap.js?v=22"></script>
+  <link rel="manifest" href="manifest.json?v=22" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=21" />
+  <link rel="stylesheet" href="style.css?v=22" />
 </head>
 <body>
   <div class="felt-bg" aria-hidden="true"></div>
@@ -169,7 +157,7 @@
     </section>
 
     <footer class="signature">
-      <span>♠</span> by Willy <span>♥</span> <small>v21</small>
+      <span>♠</span> by Willy <span>♥</span> <small>v22</small>
     </footer>
   </main>
 
@@ -230,6 +218,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>
