@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "20";
+const APP_VERSION = window.__COUNTER_BUILD__ || "21";
 
 const VALID_TARGETS = [0, 500, 1000];
 
@@ -233,6 +233,10 @@ function getRequiredDealerChoices() {
   return ({ 2: 1, 3: 2, 4: 3 })[state.playerCount] || 1;
 }
 
+function getLastRound() {
+  return state.rounds.length ? state.rounds[state.rounds.length - 1] : null;
+}
+
 function getCurrentDealerIndex() {
   if (!state.players.length || !state.dealerOrder.length) return null;
   const offset = state.rounds.length - state.dealerSetupStartRound;
@@ -251,7 +255,7 @@ function dealerChoiceIsNeeded() {
 
 function renderDealerBanner() {
   if (state.gameFinished) {
-    const lastRound = state.rounds.at(-1);
+    const lastRound = getLastRound();
     const lastDealerIndex = Number(lastRound?.dealerIndex);
     if (Number.isInteger(lastDealerIndex) && state.players[lastDealerIndex]) {
       const lastDealerName = state.players[lastDealerIndex].name;
@@ -355,7 +359,8 @@ function renderGame({ deferDealerPrompt = false } = {}) {
 
   state.players.forEach((player, index) => {
     const suit = SUITS[index];
-    const last = state.rounds.length ? Number(state.rounds.at(-1).scores[index] || 0) : null;
+    const lastRound = getLastRound();
+    const last = lastRound ? Number(lastRound.scores[index] || 0) : null;
     const progress = state.target > 0 ? Math.max(0, Math.min(100, (player.total / state.target) * 100)) : 0;
     const card = document.createElement("article");
     card.className = `player-score-card ${suit.red ? "red-card" : ""}`;
@@ -483,38 +488,41 @@ function validateRound() {
   document.activeElement?.blur();
   document.getElementById("validateRoundBtn").disabled = true;
 
-  const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
-  const scores = inputs.map(input => Number(input.value.trim() === "" ? 0 : input.value));
+  try {
+    const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
+    const scores = inputs.map(input => Number(input.value.trim() === "" ? 0 : input.value));
 
-  if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
+    if (scores.some(score => !Number.isFinite(score) || !Number.isInteger(score))) {
+      showToast("Utilise uniquement des nombres entiers.");
+      return;
+    }
+
+    inputs.forEach(input => {
+      input.value = "0";
+      input.defaultValue = "0";
+    });
+
+    scores.forEach((score, index) => { state.players[index].total += score; });
+    state.rounds.push({
+      roundNumber: state.rounds.length + 1,
+      scores,
+      dealerIndex,
+      at: Date.now()
+    });
+
+    if (checkTargetWinner()) return;
+
+    saveActiveGame();
+    renderGame({ deferDealerPrompt: true });
+    showToast(`Manche ${state.rounds.length} enregistrée.`);
+  } catch (error) {
+    console.error("La validation de la manche a échoué.", error);
+    saveActiveGame();
+    showToast("La manche est enregistrée. Recharge l'application pour actualiser l'écran.");
+  } finally {
     roundSubmissionLocked = false;
-    document.getElementById("validateRoundBtn").disabled = false;
-    showToast("Utilise uniquement des nombres entiers.");
-    return;
+    if (!state.gameFinished) document.getElementById("validateRoundBtn").disabled = false;
   }
-
-  inputs.forEach(input => {
-    input.value = "0";
-    input.defaultValue = "0";
-  });
-
-  scores.forEach((score, index) => { state.players[index].total += score; });
-  state.rounds.push({
-    roundNumber: state.rounds.length + 1,
-    scores,
-    dealerIndex,
-    at: Date.now()
-  });
-
-  if (checkTargetWinner()) {
-    roundSubmissionLocked = false;
-    return;
-  }
-
-  saveActiveGame();
-  renderGame({ deferDealerPrompt: true });
-  roundSubmissionLocked = false;
-  showToast(`Manche ${state.rounds.length} enregistrée.`);
 }
 
 function checkTargetWinner() {
