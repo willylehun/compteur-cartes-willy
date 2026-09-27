@@ -32,6 +32,7 @@ jobs:
           node --check app.js
           node --check sw.js
           node --check scripts/validate-release.mjs
+          node --check scripts/render-assetlinks.mjs
           node --check tests/game-logic.test.mjs
       - name: Run security and game tests
         run: |
@@ -42,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/icons
-          install -m 0644 .nojekyll index.html bootstrap.js app.js style.css manifest.json sw.js version.json _site/
+          install -m 0644 .nojekyll index.html privacy.html bootstrap.js app.js style.css manifest.json sw.js version.json _site/
           install -m 0644 icons/apple-touch-icon.png icons/icon-192.png icons/icon-512.png _site/icons/
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

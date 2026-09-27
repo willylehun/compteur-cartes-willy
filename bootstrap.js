@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "23";
+  const BUILD = "24";
   const CACHE_PREFIX = "willy-card-counter-";
   const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 

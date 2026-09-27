@@ -42,6 +42,8 @@ PWA mobile pour compter automatiquement les points d'une partie de cartes entre 
 - Protections PWA contre les contenus externes, l'intégration en iframe et les permissions navigateur inutiles
 - Validation défensive des données provenant du stockage local
 - Aucune API, télémétrie, ressource CDN ou dépendance JavaScript tierce
+- Politique de confidentialité publique, accessible depuis l'application
+- Projet Android Trusted Web Activity préparé pour Google Play et l'API 36
 - Design thème table de cartes et signature « by Willy »
 
 ## Test local
@@ -55,11 +57,16 @@ Puis ouvrir http://localhost:8000
 node --check bootstrap.js
 node --check app.js
 node --check sw.js
+node --check scripts/render-assetlinks.mjs
 node scripts/validate-release.mjs
 node --test tests/game-logic.test.mjs
 ```
 
-La politique de confidentialité actuelle est décrite dans `PRIVACY.md` et les signalements de vulnérabilité dans `SECURITY.md`.
+La politique de confidentialité publique se trouve dans `privacy.html`, sa documentation RGPD dans `PRIVACY.md` et les signalements de vulnérabilité dans `SECURITY.md`.
+
+## Google Play
+
+Le projet TWA se trouve dans `android/`. Les textes, le visuel promotionnel, la déclaration de sécurité des données et la checklist de soumission sont dans `play-store/`. Le workflow Android produit un AAB de contrôle non signé ; la clé d'envoi et l'empreinte Play App Signing ne doivent être ajoutées qu'après création du compte, hors du dépôt.
 
 ## GitHub Pages
-Le dépôt contient `.github/workflows/pages.yml`, `.github/workflows/security.yml` et `.github/workflows/codeql.yml`. Chaque push sur `main` valide la syntaxe, les contrôles de sécurité et la logique de jeu, lance l'analyse CodeQL, puis publie uniquement une liste blanche de fichiers nécessaires à l'application. Les actions tierces sont épinglées par SHA et les permissions sont séparées entre validation, analyse et déploiement.
+Le dépôt contient les workflows Pages, Security, CodeQL et Android. Chaque push sur `main` valide la syntaxe, les contrôles de sécurité et la logique de jeu, lance l'analyse CodeQL, construit l'App Bundle Android de contrôle, puis publie uniquement une liste blanche de fichiers nécessaires à la PWA. Les actions tierces sont épinglées par SHA et les permissions sont séparées entre validation, analyse, construction et déploiement.

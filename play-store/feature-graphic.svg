@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500" role="img" aria-labelledby="title desc">
+  <title id="title">Counter By Willy</title>
+  <desc id="desc">Visuel vert et or avec cartes à jouer et nom de l'application.</desc>
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#176344"/>
+      <stop offset="1" stop-color="#082d20"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef9"/>
+      <stop offset="1" stop-color="#f2dfad"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#00180f" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="500" fill="url(#felt)"/>
+  <circle cx="850" cy="65" r="250" fill="#d7ad55" opacity=".08"/>
+  <circle cx="105" cy="470" r="260" fill="#ffffff" opacity=".035"/>
+  <g transform="translate(90 80) rotate(-11 130 170)" filter="url(#shadow)">
+    <rect x="26" y="22" width="208" height="316" rx="30" fill="#f5e5ba" stroke="#d7ad55" stroke-width="5"/>
+    <path d="M130 125c-31 47-66 53-66 91 0 25 19 41 42 41 11 0 20-4 27-11 0 25-7 43-28 58h50c-21-15-28-33-28-58 7 7 16 11 27 11 23 0 42-16 42-41 0-38-35-44-66-91Z" fill="#af3140" opacity=".18"/>
+  </g>
+  <g transform="translate(143 45) rotate(7 130 170)" filter="url(#shadow)">
+    <rect x="26" y="22" width="208" height="316" rx="30" fill="url(#paper)" stroke="#d7ad55" stroke-width="5"/>
+    <text x="51" y="72" font-family="Georgia, serif" font-size="43" font-weight="700" fill="#103b2b">W</text>
+    <path d="M130 116c-31 47-66 53-66 91 0 25 19 41 42 41 11 0 20-4 27-11 0 25-7 43-28 58h50c-21-15-28-33-28-58 7 7 16 11 27 11 23 0 42-16 42-41 0-38-35-44-66-91Z" fill="#103b2b"/>
+  </g>
+  <g transform="translate(425 0)">
+    <text x="0" y="205" font-family="Georgia, serif" font-size="74" font-weight="700" fill="#f2d88f">Counter</text>
+    <text x="0" y="283" font-family="Georgia, serif" font-size="74" font-weight="700" fill="#fff9eb">By Willy</text>
+    <text x="2" y="340" font-family="Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#d7ad55">PARTIES · SCORES · CLASSEMENT</text>
+  </g>
+</svg>

@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   recentGames: "willy-card-recent-games-v1"
 };
 
-const APP_VERSION = window.__COUNTER_BUILD__ || "23";
+const APP_VERSION = window.__COUNTER_BUILD__ || "24";
 
 const trustedHTMLPolicy = window.trustedTypes?.createPolicy("counter-renderer", {
   createHTML: markup => String(markup)

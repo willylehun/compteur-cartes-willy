@@ -21,4 +21,4 @@ Une future collecte de statistiques devra être désactivée par défaut tant qu
 - utiliser un backend à privilèges minimaux, sans clé secrète dans le frontend ;
 - documenter les sous-traitants, transferts éventuels et mesures de sécurité.
 
-Ce document prépare ces exigences mais n'active aucune collecte.
+Ce document prépare ces exigences mais n'active aucune collecte. La version publique destinée aux utilisateurs et à Google Play est `privacy.html`.

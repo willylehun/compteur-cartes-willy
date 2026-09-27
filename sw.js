@@ -1,16 +1,18 @@
 "use strict";
 
-const APP_VERSION = "23";
+const APP_VERSION = "24";
 const CACHE_PREFIX = "willy-card-counter-";
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 const APP_SCOPE = new URL("./", self.registration.scope);
 const INDEX_URL = new URL("./index.html", APP_SCOPE).href;
+const PRIVACY_URL = new URL("./privacy.html", APP_SCOPE).href;
 const ASSETS = [
   "./index.html",
-  "./bootstrap.js?v=23",
-  "./style.css?v=23",
-  "./app.js?v=23",
-  "./manifest.json?v=23",
+  "./privacy.html",
+  "./bootstrap.js?v=24",
+  "./style.css?v=24",
+  "./app.js?v=24",
+  "./manifest.json?v=24",
   "./version.json",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
@@ -20,6 +22,7 @@ const CACHEABLE_PATHS = new Set(ASSETS.map(asset => new URL(asset, APP_SCOPE).pa
 const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self'; font-src 'none'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; child-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; media-src 'none'; trusted-types counter-renderer; require-trusted-types-for 'script'; block-all-mixed-content";
 const EXPECTED_CONTENT_TYPES = new Map([
   [new URL("./index.html", APP_SCOPE).pathname, ["text/html"]],
+  [new URL("./privacy.html", APP_SCOPE).pathname, ["text/html"]],
   [new URL("./bootstrap.js", APP_SCOPE).pathname, ["text/javascript", "application/javascript"]],
   [new URL("./app.js", APP_SCOPE).pathname, ["text/javascript", "application/javascript"]],
   [new URL("./style.css", APP_SCOPE).pathname, ["text/css"]],
@@ -31,7 +34,9 @@ const EXPECTED_CONTENT_TYPES = new Map([
 ]);
 
 function canonicalCacheKey(url, isNavigation = false) {
-  if (isNavigation) return INDEX_URL;
+  if (isNavigation) {
+    return new URL(url).pathname === new URL(PRIVACY_URL).pathname ? PRIVACY_URL : INDEX_URL;
+  }
   const canonicalUrl = new URL(url);
   canonicalUrl.search = "";
   canonicalUrl.hash = "";
@@ -105,6 +110,7 @@ self.addEventListener("activate", event => {
       .then(clients => Promise.all(clients.map(client => {
         const currentUrl = new URL(client.url);
         if (currentUrl.origin !== APP_SCOPE.origin || !currentUrl.pathname.startsWith(APP_SCOPE.pathname)) return undefined;
+        if (currentUrl.pathname === new URL(PRIVACY_URL).pathname) return undefined;
         if (currentUrl.searchParams.get("app") === `v${APP_VERSION}`) return undefined;
         return client
           .navigate(new URL(`./?app=v${APP_VERSION}&updated=1`, APP_SCOPE).href)

@@ -5,6 +5,7 @@ import path from "node:path";
 const ROOT = path.resolve(new URL("..", import.meta.url).pathname);
 const REQUIRED_RUNTIME_FILES = [
   "index.html",
+  "privacy.html",
   "bootstrap.js",
   "app.js",
   "style.css",
@@ -46,8 +47,9 @@ for (const relativePath of REQUIRED_RUNTIME_FILES) {
   assert(info.isFile() && info.size > 0, `Fichier d'exécution absent ou vide : ${relativePath}`);
 }
 
-const [indexHtml, bootstrapJs, appJs, styleCss, manifestText, serviceWorker, versionText] = await Promise.all([
+const [indexHtml, privacyHtml, bootstrapJs, appJs, styleCss, manifestText, serviceWorker, versionText] = await Promise.all([
   read("index.html"),
+  read("privacy.html"),
   read("bootstrap.js"),
   read("app.js"),
   read("style.css"),
@@ -65,6 +67,9 @@ assert(indexHtml.includes(`style.css?v=${version}`), "Version CSS désynchronis�
 assert(indexHtml.includes(`app.js?v=${version}`), "Version JavaScript désynchronisée.");
 assert(indexHtml.includes(`manifest.json?v=${version}`), "Version du manifeste désynchronisée.");
 assert(indexHtml.includes(`<small>v${version}</small>`), "Version visible désynchronisée.");
+assert(privacyHtml.includes(`<small>v${version}</small>`), "Version visible de la page de confidentialité désynchronisée.");
+assert(privacyHtml.includes(`bootstrap.js?v=${version}`), "Version bootstrap de la page de confidentialité désynchronisée.");
+assert(privacyHtml.includes(`style.css?v=${version}`), "Version CSS de la page de confidentialité désynchronisée.");
 assert(bootstrapJs.includes(`const BUILD = "${version}"`), "Version bootstrap interne désynchronisée.");
 assert(appJs.includes(`window.__COUNTER_BUILD__ || "${version}"`), "Version de secours de l'application désynchronisée.");
 assert(serviceWorker.includes(`const APP_VERSION = "${version}"`), "Version du Service Worker désynchronisée.");
@@ -85,14 +90,16 @@ const requiredCspDirectives = [
 ];
 for (const directive of requiredCspDirectives) {
   assert(indexHtml.includes(directive), `Directive CSP absente : ${directive}`);
+  assert(privacyHtml.includes(directive), `Directive CSP absente de la page de confidentialité : ${directive}`);
   assert(serviceWorker.includes(directive), `Directive CSP absente du Service Worker : ${directive}`);
 }
 assert(serviceWorker.includes("frame-ancestors 'none'"), "Protection CSP frame-ancestors absente du Service Worker.");
 assert(!indexHtml.includes("frame-ancestors 'none'"), "frame-ancestors est invalide dans une CSP livrée par balise meta.");
 assert(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(indexHtml), "Un script inline empêcherait une CSP stricte.");
-assert(!/\son[a-z]+\s*=/i.test(indexHtml), "Gestionnaire d'événement HTML inline détecté.");
-assert(!indexHtml.includes("'unsafe-inline'"), "La CSP ne doit pas autoriser le code ou les styles inline.");
-assert(!/\sstyle\s*=/i.test(indexHtml + appJs), "Style HTML inline détecté.");
+assert(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(privacyHtml), "Un script inline est présent sur la page de confidentialité.");
+assert(!/\son[a-z]+\s*=/i.test(indexHtml + privacyHtml), "Gestionnaire d'événement HTML inline détecté.");
+assert(!(indexHtml + privacyHtml).includes("'unsafe-inline'"), "La CSP ne doit pas autoriser le code ou les styles inline.");
+assert(!/\sstyle\s*=/i.test(indexHtml + privacyHtml + appJs), "Style HTML inline détecté.");
 assert(!/\.style(?:\.|\[|\s*=)/.test(appJs + bootstrapJs), "Modification de style inline détectée.");
 assert(!/\b(?:eval|Function)\s*\(/.test(appJs + bootstrapJs + serviceWorker), "Exécution JavaScript dynamique interdite.");
 assert(!/document\.write\s*\(/.test(appJs + bootstrapJs), "document.write est interdit.");
@@ -106,13 +113,20 @@ assert(serviceWorker.includes('headers.set("Cross-Origin-Embedder-Policy", "requ
 assert(serviceWorker.includes('headers.set("Origin-Agent-Cluster", "?1")'), "Isolation Origin-Agent-Cluster absente.");
 assert(serviceWorker.includes("hasExpectedContentType"), "Validation MIME du Service Worker absente.");
 assert(serviceWorker.includes("key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME"), "Le nettoyage du cache n'est pas limité à l'application.");
+assert(serviceWorker.includes("PRIVACY_URL") && serviceWorker.includes("pathname === new URL(PRIVACY_URL).pathname"), "La navigation confidentialité doit conserver son propre cache.");
 
 for (const [asset, content] of [["bootstrap.js", bootstrapJs], ["app.js", appJs], ["style.css", styleCss]]) {
   const integrity = sha384Integrity(content);
   assert(indexHtml.includes(`integrity="${integrity}"`), `Empreinte SRI absente ou invalide pour ${asset}.`);
+  if (asset !== "app.js") {
+    assert(privacyHtml.includes(`integrity="${integrity}"`), `Empreinte SRI absente ou invalide pour ${asset} dans privacy.html.`);
+  }
 }
 
-const runtimeBundle = [indexHtml, bootstrapJs, appJs, styleCss, manifestText, serviceWorker, versionText].join("\n");
+assert(indexHtml.includes('href="privacy.html"'), "Lien vers la confidentialité absent de l'application.");
+assert(privacyHtml.includes('rel="noopener noreferrer"'), "Le lien externe de confidentialité doit neutraliser opener et referrer.");
+
+const runtimeBundle = [indexHtml, privacyHtml, bootstrapJs, appJs, styleCss, manifestText, serviceWorker, versionText].join("\n");
 assert(!/\bhttp:\/\//i.test(runtimeBundle), "Ressource HTTP non sécurisée détectée dans l'application.");
 assert(!/(?:src|href)=["']https?:\/\//i.test(indexHtml), "Ressource externe détectée dans index.html.");
 
@@ -137,7 +151,7 @@ for (const absolutePath of await walk()) {
   }
 }
 
-for (const workflowPath of [".github/workflows/pages.yml", ".github/workflows/security.yml", ".github/workflows/codeql.yml"]) {
+for (const workflowPath of [".github/workflows/pages.yml", ".github/workflows/security.yml", ".github/workflows/codeql.yml", ".github/workflows/android.yml"]) {
   const workflow = await read(workflowPath);
   assert(!workflow.includes("pull_request_target"), `${workflowPath} ne doit pas utiliser pull_request_target.`);
   assert(!workflow.includes("write-all"), `${workflowPath} accorde des permissions excessives.`);
@@ -149,5 +163,30 @@ for (const workflowPath of [".github/workflows/pages.yml", ".github/workflows/se
 const pagesWorkflow = await read(".github/workflows/pages.yml");
 assert(pagesWorkflow.includes('path: "_site"'), "Pages doit publier uniquement le répertoire préparé.");
 assert(!pagesWorkflow.includes('path: "."'), "Le dépôt entier ne doit pas être publié.");
+assert(pagesWorkflow.includes("index.html privacy.html bootstrap.js"), "La page de confidentialité doit faire partie de la liste blanche Pages.");
+
+const androidBuild = await read("android/app/build.gradle");
+const androidManifest = await read("android/app/src/main/AndroidManifest.xml");
+const androidStrings = await read("android/app/src/main/res/values/strings.xml");
+const networkSecurity = await read("android/app/src/main/res/xml/network_security_config.xml");
+const assetlinksGenerator = await read("scripts/render-assetlinks.mjs");
+const playListing = await read("play-store/listing-fr.md");
+
+assert(androidBuild.includes('applicationId "fr.bywilly.counter"'), "Identifiant Android inattendu.");
+assert(androidBuild.includes("compileSdk 36") && androidBuild.includes("targetSdk 36"), "Le projet Android doit cibler l'API 36.");
+assert(androidBuild.includes('androidbrowserhelper:2.7.3'), "Version Android Browser Helper inattendue.");
+assert(!androidBuild.includes("signingConfigs") && !androidBuild.includes("storePassword"), "La signature Android ne doit pas être configurée dans le dépôt.");
+const androidPermissions = [...androidManifest.matchAll(/<uses-permission\s+android:name="([^"]+)"/g)].map(match => match[1]);
+assert(androidPermissions.length === 1 && androidPermissions[0] === "android.permission.INTERNET", "Android ne doit demander que la permission Internet.");
+assert(androidManifest.includes('android:usesCleartextTraffic="false"'), "Le trafic Android en clair doit être bloqué.");
+assert(androidManifest.includes('android:allowBackup="false"'), "Les sauvegardes Android doivent être désactivées.");
+assert(networkSecurity.includes('cleartextTrafficPermitted="false"'), "La configuration réseau Android doit refuser HTTP.");
+assert(androidStrings.includes(`?app=v${version}`), "La TWA ne pointe pas vers la version PWA publiée.");
+assert(assetlinksGenerator.includes('const PACKAGE_NAME = "fr.bywilly.counter"'), "Le générateur Asset Links utilise un paquet inattendu.");
+assert(playListing.includes("/privacy.html"), "La fiche Play doit référencer la politique de confidentialité publique.");
+
+const featureGraphic = await readFile(path.join(ROOT, "play-store/feature-graphic.png"));
+assert(featureGraphic.subarray(1, 4).toString("ascii") === "PNG", "Le visuel promotionnel doit être un PNG.");
+assert(featureGraphic.readUInt32BE(16) === 1024 && featureGraphic.readUInt32BE(20) === 500, "Le visuel promotionnel doit mesurer 1024 × 500.");
 
 console.log(`Validation de sécurité réussie pour Counter By Willy v${version}.`);

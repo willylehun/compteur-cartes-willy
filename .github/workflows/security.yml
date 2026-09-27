@@ -34,6 +34,7 @@ jobs:
           node --check app.js
           node --check sw.js
           node --check scripts/validate-release.mjs
+          node --check scripts/render-assetlinks.mjs
           node --check tests/game-logic.test.mjs
           node scripts/validate-release.mjs
           node --test tests/game-logic.test.mjs

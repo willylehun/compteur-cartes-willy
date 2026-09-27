@@ -10,6 +10,8 @@
 *.keystore
 credentials*.json
 secrets*.json
+android/keystore.properties
+android/local.properties
 
 # Dépendances, caches et sorties locales
 node_modules/
@@ -17,6 +19,8 @@ _site/
 coverage/
 .cache/
 *.log
+android/.gradle/
+android/**/build/
 
 # Fichiers système et éditeurs
 .DS_Store
