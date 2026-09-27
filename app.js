@@ -487,6 +487,7 @@ function validateRound() {
   roundSubmissionLocked = true;
   document.activeElement?.blur();
   document.getElementById("validateRoundBtn").disabled = true;
+  let roundWasRecorded = false;
 
   try {
     const inputs = [...els.roundInputs.querySelectorAll(".round-score-input")];
@@ -509,6 +510,7 @@ function validateRound() {
       dealerIndex,
       at: Date.now()
     });
+    roundWasRecorded = true;
 
     if (checkTargetWinner()) return;
 
@@ -517,8 +519,12 @@ function validateRound() {
     showToast(`Manche ${state.rounds.length} enregistrée.`);
   } catch (error) {
     console.error("La validation de la manche a échoué.", error);
-    saveActiveGame();
-    showToast("La manche est enregistrée. Recharge l'application pour actualiser l'écran.");
+    if (roundWasRecorded) {
+      saveActiveGame();
+      showToast("La manche est enregistrée. Recharge l'application pour actualiser l'écran.");
+    } else {
+      showToast("Impossible de valider cette manche. Réessaie.");
+    }
   } finally {
     roundSubmissionLocked = false;
     if (!state.gameFinished) document.getElementById("validateRoundBtn").disabled = false;
